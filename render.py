@@ -1,6 +1,6 @@
 from math import sin, cos
 import turtle
-verteces = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1),
+vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1),
             (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1)]
 triangles = [
     (0, 1, 2), (2, 3, 0),
@@ -30,12 +30,13 @@ while True:
 	for triangle in triangles:
 		points = []
 		for vertex in triangle:
-			x, y, z = verteces[vertex]
-			x, z = rotate(x - cam.x, z - cam.z, -cam.yr)
-			y, z = rotate(y - cam.y, z - cam.z, -cam.xr)
-			x, y = rotate(x - cam.x, y - cam.y, -cam.zr)
-			sx, sy = x * cam.fov/(z-cam.z), y * cam.fov/(z-cam.z)
-			points.append((sx, sy))
+			x, y, z = vertices[vertex]
+			x, y, z = x - cam.x, y - cam.y, z - cam.z
+			xr, yr, zr = -cam.xr, -cam.yr, -cam.zr
+			x, z = rotate(x, z, yr)
+			y, z = rotate(y, z, xr)
+			x, y = rotate(x, y, zr)
+			points.append((x * cam.fov/z, y * cam.fov/z))
 		pointer.goto(points[0][0], points[0][1])
 		pointer.down()
 		pointer.goto(points[1][0], points[1][1])
