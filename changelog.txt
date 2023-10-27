@@ -1,0 +1,7 @@
+FORMAT: 
+NAME : DD/MM/YYYY
+NOTES/CHANGES...
+
+Lrae1207 : 27/10/2023
++ Added changelog.txt
++ Fixed spelling of vertices
