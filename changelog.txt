@@ -5,3 +5,6 @@ NOTES/CHANGES...
 Lrae1207 : 27/10/2023
 + Added changelog.txt
 + Fixed spelling of vertices
+
+Bolt2307 : 27/10/2024
++ Fixed Camera Rotation
