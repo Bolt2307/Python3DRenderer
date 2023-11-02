@@ -13,7 +13,12 @@ class Camera:
     rotation = Vector3() # x = yaw, y = pitch, z = roll
     velocity = Vector3()
     focal_length = 400
-    
+	
+pause = False
+pausecooldown = 0
+crosshairspread = 0
+speed = 0.025
+
 init()
 screen = display.set_mode((0,0), FULLSCREEN)
 clock = time.Clock()
@@ -60,33 +65,74 @@ def render ():
             x, z = rotate_point(x, z, yaw)
             y, z = rotate_point(y, z, pitch)
             x, y = rotate_point(x, y, roll)
-            points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2))
-        draw.polygon(screen, 'black', points, 0)
+            show = False
+            if z < 100: #stops rendering from 100 units away
+                if z > 0: #stops rendering when behind the camera
+                    show = True
+            points.append((x * cam.fov/z+scrn.width/2, -y * cam.fov/z+scrn.height/2))
+        if show == True:
+            draw.polygon(screen, 'black', points, 0)
+
+def gui ():
+    global crosshairspread
+    crosshairspread = speed * 100
+    
+    #crosshairs
+    draw.line(screen, 'red', (scrn.width/2-10-crosshairspread, scrn.height/2), (scrn.width/2-crosshairspread, scrn.height/2)) #horizontal left
+    draw.line(screen, 'red', (scrn.width/2+crosshairspread, scrn.height/2), (scrn.width/2+10+crosshairspread, scrn.height/2)) #horizontal right
+    draw.line(screen, 'red', (scrn.width/2, scrn.height/2-10-crosshairspread), (scrn.width/2, scrn.height/2-crosshairspread)) #vertical top
+    draw.line(screen, 'red', (scrn.width/2, scrn.height/2+crosshairspread), (scrn.width/2, scrn.height/2+10+crosshairspread)) #vertical vertical bottom
 
 def handle_control ():
+    global pausecooldown
+    global pause
+    global speed
     keys = key.get_pressed()
 
     #rotation
     rel = mouse.get_rel()
-    cam.rotation.x += rel[0]*0.2
-    cam.rotation.y -= rel[1]*0.2
+    if pause == False:
+        cam.yaw += rel[0]*0.15
+        cam.pitch -= rel[1]*0.15 #mouse sense
 
-    #movement
-    if keys[K_w]:
-        cam.velocity.z += 0.05*cos(radians(cam.rotation.x))
-        cam.velocity.x += 0.05*sin(radians(cam.rotation.x))
-    if keys[K_s]:
-        cam.velocity.z -= 0.05*cos(radians(cam.rotation.x))
-        cam.velocity.x -= 0.05*sin(radians(cam.rotation.x))
-    if keys[K_a]:
-        cam.velocity.z -= 0.05*cos(radians(cam.rotation.x+90))
-        cam.velocity.x -= 0.05*sin(radians(cam.rotation.x+90))
-    if keys[K_d]:
-        cam.velocity.z += 0.05*cos(radians(cam.rotation.x+90))
-        cam.velocity.x += 0.05*sin(radians(cam.rotation.x+90))
-    if keys[K_SPACE]:
-        if cam.position.y <= 0:
-            cam.velocity.y += 1
+        #movement
+        if keys[K_LSHIFT]: #sprinting
+            speed = 0.1
+        else:
+            speed = 0.025
+        if keys[K_w]:
+            player.zvel += speed*cos(radians(cam.yaw))
+            player.xvel += speed*sin(radians(cam.yaw))
+        if keys[K_s]:
+            player.zvel -= speed*cos(radians(cam.yaw))
+            player.xvel -= speed*sin(radians(cam.yaw))
+        if keys[K_a]:
+            player.zvel -= speed*cos(radians(cam.yaw+90))
+            player.xvel -= speed*sin(radians(cam.yaw+90))
+        if keys[K_d]:
+            player.zvel += speed*cos(radians(cam.yaw+90))
+            player.xvel += speed*sin(radians(cam.yaw+90))
+        if keys[K_SPACE]:
+            if cam.y <= 0:
+                player.yvel += 1
+    #misc
+    else:
+        if keys[K_e]: #exits the game if e is pressed in pause
+            QUIT()
+
+    if pausecooldown < 0: #pauses the game on pauseape
+        if keys[K_ESCAPE]:
+            pausecooldown = 0.2
+            if pause == False:
+                pause = True
+                mouse.set_visible(True)
+                mouse.set_cursor(SYSTEM_CURSOR_ARROW)
+            elif pause == True:
+                pause = False
+                mouse.set_visible(False)
+                mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
+    else:
+        pausecooldown -= 0.1 #makes sure that pauseape is not held and spammed
 
 while running:
     # Handle events
@@ -98,6 +144,8 @@ while running:
     
 	# Take in user input
     handle_control()
+	
+    mouse.set_pos(scrn.width/2, scrn.height/2) #mouse "lock"
     
 	# Render objects
     render()
