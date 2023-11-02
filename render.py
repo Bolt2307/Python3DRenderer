@@ -107,17 +107,17 @@ def handle_control ():
             if cam.focal_length < 400:
                 cam.focal_length += 10
         if keys[K_w]:
-            cam.velocity.z += speed*cos(radians(cam.rotation.y))
-            cam.velocity.x += speed*sin(radians(cam.rotation.y))
+            cam.velocity.z += speed*cos(radians(cam.rotation.x))
+            cam.velocity.x += speed*sin(radians(cam.rotation.x))
         if keys[K_s]:
-            cam.velocity.z -= speed*cos(radians(cam.rotation.y))
-            cam.velocity.x -= speed*sin(radians(cam.rotation.y))
+            cam.velocity.z -= speed*cos(radians(cam.rotation.x))
+            cam.velocity.x -= speed*sin(radians(cam.rotation.x))
         if keys[K_a]:
-            cam.velocity.z -= speed*cos(radians(cam.rotation.y+90))
-            cam.velocity.x -= speed*sin(radians(cam.rotation.y+90))
+            cam.velocity.z -= speed*cos(radians(cam.rotation.x+90))
+            cam.velocity.x -= speed*sin(radians(cam.rotation.x+90))
         if keys[K_d]:
-            cam.velocity.z += speed*cos(radians(cam.rotation.y+90))
-            cam.velocity.x += speed*sin(radians(cam.rotation.y+90))
+            cam.velocity.z += speed*cos(radians(cam.rotation.x+90))
+            cam.velocity.x += speed*sin(radians(cam.rotation.x+90))
         if keys[K_SPACE]:
             if cam.position.y <= 0:
                 cam.velocity.y += 1
