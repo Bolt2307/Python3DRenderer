@@ -160,5 +160,5 @@ while running:
         cam.position.y += 0.001
     display.flip() # Invert screen
     display.update() # Display new render
-    clock.tick(60)
+    clock.tick(1000) #1000 fps
 quit()
