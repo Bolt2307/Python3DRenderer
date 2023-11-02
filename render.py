@@ -1,5 +1,37 @@
 from pygame import*
 from math import*
+
+# Class definitions
+
+# Triple tuple representing coordinates, rotation, movement, etc.
+class Vector3:
+    x,y,z = 0,0,0
+
+# Represents camera controlled by the player
+class Camera:
+    position = Vector3()
+    rotation = Vector3() # x = yaw, y = pitch, z = roll
+    velocity = Vector3()
+    focal_length = 400
+    
+init()
+screen = display.set_mode((0,0), FULLSCREEN)
+clock = time.Clock()
+running = True
+display.set_caption('YEAH BABY!')
+mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
+mouse.set_visible(False)
+
+# Dimensions of the screen
+class Screen:
+    width = screen.get_width()
+    height = screen.get_height()
+    
+# Instantiate classes
+cam = Camera()
+scrn = Screen()
+
+# Put these into classes with vertex data and color later
 vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), #cube
             (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1),
             (2, -1, -1), (4, -1, -1), (2, -1, 1), (4, -1, 1), (4, 1, -1), (2, 1, -1)] #wedge 1st=8
@@ -15,33 +47,7 @@ faces = [
     (8, 9, 12), (8, 13, 12),
     (13, 10, 12), (12, 11, 10)]
 
-init()
-screen = display.set_mode((0,0), FULLSCREEN)
-clock = time.Clock()
-running = True
-display.set_caption('YEAH BABY!')
-mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
-mouse.set_visible(False)
-
-class scrn:
-    width = screen.get_width()
-    height = screen.get_height()
-
-class cam:
-    x = 0
-    y = 0
-    z = -10
-    pitch = 0
-    yaw = 0
-    roll = 0
-    fov = 400
-
-class player:
-    xvel = 0
-    yvel = 0
-    zvel = 0
-
-def rotate(x, y, r):
+def rotate_point(x, y, r):
   return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
 
 def render ():
@@ -49,54 +55,62 @@ def render ():
         points = []
         for vertex in face:
             x, y, z = vertices[vertex]
-            x, y, z = x - cam.x, y - cam.y, z - cam.z
-            pitch, yaw, roll = radians(cam.pitch), radians(cam.yaw), radians(cam.roll)
-            x, z = rotate(x, z, yaw)
-            y, z = rotate(y, z, pitch)
-            x, y = rotate(x, y, roll)
-            points.append((x * cam.fov/z+scrn.width/2, -y * cam.fov/z+scrn.height/2))
+            x, y, z = x - cam.position.x, y - cam.position.y, z - cam.position.z
+            yaw, pitch, roll = radians(cam.rotation.x), radians(cam.rotation.y), radians(cam.rotation.z)
+            x, z = rotate_point(x, z, yaw)
+            y, z = rotate_point(y, z, pitch)
+            x, y = rotate_point(x, y, roll)
+            points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2))
         draw.polygon(screen, 'black', points, 0)
 
-def control ():
+def handle_control ():
     keys = key.get_pressed()
 
     #rotation
     rel = mouse.get_rel()
-    cam.yaw += rel[0]*0.2
-    cam.pitch -= rel[1]*0.2
+    cam.rotation.x += rel[0]*0.2
+    cam.rotation.y -= rel[1]*0.2
 
     #movement
     if keys[K_w]:
-        player.zvel += 0.05*cos(radians(cam.yaw))
-        player.xvel += 0.05*sin(radians(cam.yaw))
+        cam.velocity.z += 0.05*cos(radians(cam.rotation.x))
+        cam.velocity.x += 0.05*sin(radians(cam.rotation.x))
     if keys[K_s]:
-        player.zvel -= 0.05*cos(radians(cam.yaw))
-        player.xvel -= 0.05*sin(radians(cam.yaw))
+        cam.velocity.z -= 0.05*cos(radians(cam.rotation.x))
+        cam.velocity.x -= 0.05*sin(radians(cam.rotation.x))
     if keys[K_a]:
-        player.zvel -= 0.05*cos(radians(cam.yaw+90))
-        player.xvel -= 0.05*sin(radians(cam.yaw+90))
+        cam.velocity.z -= 0.05*cos(radians(cam.rotation.x+90))
+        cam.velocity.x -= 0.05*sin(radians(cam.rotation.x+90))
     if keys[K_d]:
-        player.zvel += 0.05*cos(radians(cam.yaw+90))
-        player.xvel += 0.05*sin(radians(cam.yaw+90))
+        cam.velocity.z += 0.05*cos(radians(cam.rotation.x+90))
+        cam.velocity.x += 0.05*sin(radians(cam.rotation.x+90))
     if keys[K_SPACE]:
-        if cam.y <= 0:
-            player.yvel += 1
+        if cam.position.y <= 0:
+            cam.velocity.y += 1
 
 while running:
+    # Handle events
     for gevent in event.get():
         if gevent.type == QUIT:
             running = False
+    # Background color
     screen.fill('white')
-    control()
+    
+	# Take in user input
+    handle_control()
+    
+	# Render objects
     render()
-    cam.x, cam.y, cam.z = cam.x + player.xvel, cam.y + player.yvel, cam.z + player.zvel
-    player.xvel, player.yvel, player.zvel = player.xvel * 0.85, player.yvel * 0.85, player.zvel * 0.85
-    if cam.y > 0:
-        player.yvel -= 0.05
+    
+	# Change position by velocity and apply drag to velocity
+    cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
+    cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
+    if cam.position.y > 0: # Apply Gravity
+        cam.velocity.y -= 0.05
     else:
-        player.yvel = 0
-        cam.y += 0.001
-    display.flip()
-    display.update()
+        cam.velocity.y = 0
+        cam.position.y += 0.001
+    display.flip() # Invert screen
+    display.update() # Display new render
     clock.tick(60)
 quit()
