@@ -7,10 +7,10 @@ from math import*
 class Vector3:
     x,y,z = 0,0,0
 
-# Represents camera controlled by the player
+# Represents camera controlled by the cam.velocity
 class Camera:
     position = Vector3()
-    rotation = Vector3() # x = yaw, y = pitch, z = roll
+    rotation = Vector3() # x = rotation.y, y = rotation.x, z = roll
     velocity = Vector3()
     focal_length = 400
 	
@@ -92,8 +92,8 @@ def handle_control ():
     #rotation
     rel = mouse.get_rel()
     if pause == False:
-        cam.yaw += rel[0]*0.15
-        cam.pitch -= rel[1]*0.15 #mouse sense
+        cam.rotation.y += rel[0]*0.15
+        cam.rotation.x -= rel[1]*0.15 #mouse sense
 
         #movement
         if keys[K_LSHIFT]: #sprinting
@@ -101,20 +101,20 @@ def handle_control ():
         else:
             speed = 0.025
         if keys[K_w]:
-            player.zvel += speed*cos(radians(cam.yaw))
-            player.xvel += speed*sin(radians(cam.yaw))
+            cam.velocity.z += speed*cos(radians(cam.rotation.y))
+            cam.velocity.x += speed*sin(radians(cam.rotation.y))
         if keys[K_s]:
-            player.zvel -= speed*cos(radians(cam.yaw))
-            player.xvel -= speed*sin(radians(cam.yaw))
+            cam.velocity.z -= speed*cos(radians(cam.rotation.y))
+            cam.velocity.x -= speed*sin(radians(cam.rotation.y))
         if keys[K_a]:
-            player.zvel -= speed*cos(radians(cam.yaw+90))
-            player.xvel -= speed*sin(radians(cam.yaw+90))
+            cam.velocity.z -= speed*cos(radians(cam.rotation.y+90))
+            cam.velocity.x -= speed*sin(radians(cam.rotation.y+90))
         if keys[K_d]:
-            player.zvel += speed*cos(radians(cam.yaw+90))
-            player.xvel += speed*sin(radians(cam.yaw+90))
+            cam.velocity.z += speed*cos(radians(cam.rotation.y+90))
+            cam.velocity.x += speed*sin(radians(cam.rotation.y+90))
         if keys[K_SPACE]:
             if cam.y <= 0:
-                player.yvel += 1
+                cam.velocity.y += 1
     #misc
     else:
         if keys[K_e]: #exits the game if e is pressed in pause
