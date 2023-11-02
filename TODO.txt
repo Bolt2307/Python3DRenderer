@@ -1,2 +1,3 @@
-Lock the Mouse
-Camera Culling
+- Lock the Mouse
+- Camera Culling
+- Fit the objects into a class to allow for more dynamic object creation and for coloring
