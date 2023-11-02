@@ -14,6 +14,14 @@ class Camera:
     velocity = Vector3()
     focal_length = 400
     
+init()
+screen = display.set_mode((0,0), FULLSCREEN)
+clock = time.Clock()
+running = True
+display.set_caption('YEAH BABY!')
+mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
+mouse.set_visible(False)
+
 # Dimensions of the screen
 class Screen:
     width = screen.get_width()
@@ -38,14 +46,6 @@ faces = [
     (8, 9, 11), (8, 10, 11),
     (8, 9, 12), (8, 13, 12),
     (13, 10, 12), (12, 11, 10)]
-
-init()
-screen = display.set_mode((0,0), FULLSCREEN)
-clock = time.Clock()
-running = True
-display.set_caption('YEAH BABY!')
-mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
-mouse.set_visible(False)
 
 def rotate_point(x, y, r):
   return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
