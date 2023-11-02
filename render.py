@@ -15,8 +15,9 @@ screen = display.set_mode((0,0), FULLSCREEN)
 clock = time.Clock()
 running = True
 display.set_caption('YEAH BABY!')
-
+mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
 mouse.set_visible(False)
+
 class scrn:
     width = screen.get_width()
     height = screen.get_height()
@@ -34,9 +35,6 @@ class player:
     xvel = 0
     yvel = 0
     zvel = 0
-    pitchv = 0
-    yawv = 0
-    rollv = 0
 
 def rotate(x, y, r):
   return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
@@ -54,18 +52,13 @@ def render ():
             points.append((x * cam.fov/z+scrn.width/2, -y * cam.fov/z+scrn.height/2))
         draw.polygon(screen, 'black', points, 0)
 
-def keyinputs ():
+def control ():
     keys = key.get_pressed()
 
     #rotation
-    if keys[K_LEFT]:
-        player.yawv -= 1
-    if keys[K_RIGHT]:
-        player.yawv += 1
-    if keys[K_UP]:
-        player.pitchv += 1
-    if keys[K_DOWN]:
-        player.pitchv -= 1
+    rel = mouse.get_rel()
+    cam.yaw += rel[0]/10
+    cam.pitch -= rel[1]/10
 
     #movement
     if keys[K_w]:
@@ -89,12 +82,10 @@ while running:
         if gevent.type == QUIT:
             running = False
     screen.fill('white')
-    keyinputs()
+    control()
     render()
     cam.x, cam.y, cam.z = cam.x + player.xvel, cam.y + player.yvel, cam.z + player.zvel
-    cam.pitch, cam.yaw, cam.roll = cam.pitch + player.pitchv, cam.yaw + player.yawv, cam.roll + player.rollv
     player.xvel, player.yvel, player.zvel = player.xvel * 0.85, player.yvel * 0.85, player.zvel * 0.85
-    player.pitchv, player.yawv, player.rollv = player.pitchv * 0.7, player.yawv * 0.7, player.rollv * 0.7
     if cam.y > 0:
         player.yvel -= 0.1
     else:
