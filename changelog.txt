@@ -15,3 +15,13 @@ Bolt2307 : 1/11/2023
 + Added controller
 + Made surfaces fill with color
 + Switched Rotation to be done with the cursor
+
+Lrae1207 : 2/11/2023
++ Comments to describe and separate sections of code
++ Fixed class system
++ Added Vector3 class
++ Changed Camera fields to 3 Vector3 objects representing velocity, position and rotation
++ Changed to capitalized class names which are instantiated as objects
+- Removed player class as it was unnecessary
++ Changed name of fov to focal_length
++ Changed TODO.txt
