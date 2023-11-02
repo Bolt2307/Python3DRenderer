@@ -113,7 +113,7 @@ def handle_control ():
             cam.velocity.z += speed*cos(radians(cam.rotation.y+90))
             cam.velocity.x += speed*sin(radians(cam.rotation.y+90))
         if keys[K_SPACE]:
-            if cam.y <= 0:
+            if cam.position.y <= 0:
                 cam.velocity.y += 1
     #misc
     else:
@@ -145,23 +145,23 @@ while running:
     
 	# Take in user input
     handle_control()
-	
-    mouse.set_pos(scrn.width/2, scrn.height/2) #mouse "lock"
+    if pause == False:
+        mouse.set_pos(scrn.width/2, scrn.height/2) #mouse "lock"
+	    # Change position by velocity and apply drag to velocity
+        cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
+        cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
+        if cam.position.y > 0: # Apply Gravity
+            cam.velocity.y -= 0.05
+        else:
+            cam.velocity.y = 0
+            cam.position.y += 0.001
     
 	# Render objects
     render()
 
     # Render GUI
     gui()
-
-	# Change position by velocity and apply drag to velocity
-    cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
-    cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
-    if cam.position.y > 0: # Apply Gravity
-        cam.velocity.y -= 0.05
-    else:
-        cam.velocity.y = 0
-        cam.position.y += 0.001
+    
     display.flip() # Invert screen
     display.update() # Display new render
     clock.tick(1000) #1000 fps
