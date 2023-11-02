@@ -92,8 +92,8 @@ def handle_control ():
     #rotation
     rel = mouse.get_rel()
     if pause == False:
-        cam.rotation.y += rel[0]*0.15
-        cam.rotation.x -= rel[1]*0.15 #mouse sense
+        cam.rotation.x += rel[0]*0.15
+        cam.rotation.y -= rel[1]*0.15 #mouse sense
 
         #movement
         if keys[K_LSHIFT]: #sprinting
@@ -133,6 +133,7 @@ def handle_control ():
                 mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
     else:
         pausecooldown -= 0.1 #makes sure that pauseape is not held and spammed
+cam.position.z = -10
 
 while running:
     # Handle events
@@ -149,7 +150,10 @@ while running:
     
 	# Render objects
     render()
-    
+
+    # Render GUI
+    gui()
+
 	# Change position by velocity and apply drag to velocity
     cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
     cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
