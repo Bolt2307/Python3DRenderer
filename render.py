@@ -97,9 +97,15 @@ def handle_control ():
 
         #movement
         if keys[K_LSHIFT]: #sprinting
-            speed = 0.1
+            if speed < 0.1:
+                speed += 0.01
+            if cam.focal_length > 300:
+                cam.focal_length -= 10
         else:
-            speed = 0.025
+            if speed > 0.025:
+                speed -= 0.005
+            if cam.focal_length < 400:
+                cam.focal_length += 10
         if keys[K_w]:
             cam.velocity.z += speed*cos(radians(cam.rotation.y))
             cam.velocity.x += speed*sin(radians(cam.rotation.y))
