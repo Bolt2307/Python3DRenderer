@@ -1,14 +1,19 @@
 from pygame import*
 from math import*
-vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1),
-            (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1)]
-triangles = [
-    (0, 1, 2), (2, 3, 0),
+vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), #cube
+            (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1),
+            (2, -1, -1), (4, -1, -1), (2, -1, 1), (4, -1, 1), (4, 1, -1), (2, 1, -1)] #wedge 1st=8
+faces = [
+    (0, 1, 2), (2, 3, 0), #Cube
     (0, 4, 5), (5, 1, 0),
     (0, 4, 3), (4, 7, 3),
     (5, 4, 7), (7, 6, 5),
     (7, 6, 3), (6, 2, 3),
-    (5, 1, 2), (2, 6, 5)]
+    (5, 1, 2), (2, 6, 5),
+    (8, 10, 13), (9, 11, 12), #Wedge
+    (8, 9, 11), (8, 10, 11),
+    (8, 9, 12), (8, 13, 12),
+    (13, 10, 12), (12, 11, 10)]
 
 init()
 screen = display.set_mode((0,0), FULLSCREEN)
@@ -40,9 +45,9 @@ def rotate(x, y, r):
   return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
 
 def render ():
-    for triangle in triangles:
+    for face in faces:
         points = []
-        for vertex in triangle:
+        for vertex in face:
             x, y, z = vertices[vertex]
             x, y, z = x - cam.x, y - cam.y, z - cam.z
             pitch, yaw, roll = radians(cam.pitch), radians(cam.yaw), radians(cam.roll)
@@ -57,8 +62,8 @@ def control ():
 
     #rotation
     rel = mouse.get_rel()
-    cam.yaw += rel[0]/10
-    cam.pitch -= rel[1]/10
+    cam.yaw += rel[0]*0.2
+    cam.pitch -= rel[1]*0.2
 
     #movement
     if keys[K_w]:
@@ -87,7 +92,7 @@ while running:
     cam.x, cam.y, cam.z = cam.x + player.xvel, cam.y + player.yvel, cam.z + player.zvel
     player.xvel, player.yvel, player.zvel = player.xvel * 0.85, player.yvel * 0.85, player.zvel * 0.85
     if cam.y > 0:
-        player.yvel -= 0.1
+        player.yvel -= 0.05
     else:
         player.yvel = 0
         cam.y += 0.001
