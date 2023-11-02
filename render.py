@@ -1,41 +1,7 @@
-
-from math import sin, cos
-import tkinter
-import turtle
-
-class Vector3: # Use this instead of triple tuples
-	x = 0
-	y = 0
-	z = 0
-	def Vector3(newX, newY, newZ):
-		x = newX
-		y = newY
-		z = newZ
-
-# Class definitions
-
-class Camera: # Represents physical attributes of a camera used to render
-	x = 0
-	y = 0
-	z = -5
-	xr = 0
-	yr = 0
-	zr = 0
-	fov = 400
-
-# Function definitions
-
-def anglesToVector(yaw,pitch): # Returns a Vector3 representing the direction as a 3d vector
-	x = cos(yaw) * cos(pitch)
-	z = sin(yaw) * cos(pitch)
-	y = sin(pitch)
-	return Vector3(x,y,z)
-
-def rotate(x, y, r): # PLEASE DOCUMENt THIS MAX
-  return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
-
-# Replace this with Vector3-composed objects
-vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1)]
+from pygame import*
+from math import*
+vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1),
+            (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1)]
 triangles = [
     (0, 1, 2), (2, 3, 0),
     (0, 4, 5), (5, 1, 0),
@@ -44,33 +10,97 @@ triangles = [
     (7, 6, 3), (6, 2, 3),
     (5, 1, 2), (2, 6, 5)]
 
-# Example of class instantiation
-cam = Camera()
+init()
+screen = display.set_mode((0,0), FULLSCREEN)
+clock = time.Clock()
+running = True
+display.set_caption('YEAH BABY!')
 
-window = turtle.Screen()
-window.title("YEAH BABY!")
-pointer = turtle.Turtle()
-pointer.hideturtle()
-turtle.tracer(0, 0)
-pointer.up()
+mouse.set_visible(False)
+class scrn:
+    width = screen.get_width()
+    height = screen.get_height()
 
-# Main loop
-while True:
-	pointer.clear()
-	for triangle in triangles:
-		points = []
-		for vertex in triangle:
-			x, y, z = vertices[vertex]
-			x, y, z = x - cam.x, y - cam.y, z - cam.z
-			xr, yr, zr = -cam.xr, -cam.yr, -cam.zr
-			x, z = rotate(x, z, yr)
-			y, z = rotate(y, z, xr)
-			x, y = rotate(x, y, zr)
-			points.append((x * cam.fov/z, y * cam.fov/z))
-		pointer.goto(points[0][0], points[0][1])
-		pointer.down()
-		pointer.goto(points[1][0], points[1][1])
-		pointer.goto(points[2][0], points[2][1])
-		pointer.goto(points[0][0], points[0][1])
-		pointer.up()
-	turtle.update()
+class cam:
+    x = 0
+    y = 0
+    z = -10
+    pitch = 0
+    yaw = 0
+    roll = 0
+    fov = 400
+
+class player:
+    xvel = 0
+    yvel = 0
+    zvel = 0
+    pitchv = 0
+    yawv = 0
+    rollv = 0
+
+def rotate(x, y, r):
+  return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
+
+def render ():
+    for triangle in triangles:
+        points = []
+        for vertex in triangle:
+            x, y, z = vertices[vertex]
+            x, y, z = x - cam.x, y - cam.y, z - cam.z
+            pitch, yaw, roll = radians(cam.pitch), radians(cam.yaw), radians(cam.roll)
+            x, z = rotate(x, z, yaw)
+            y, z = rotate(y, z, pitch)
+            x, y = rotate(x, y, roll)
+            points.append((x * cam.fov/z+scrn.width/2, -y * cam.fov/z+scrn.height/2))
+        draw.polygon(screen, 'black', points, 0)
+
+def keyinputs ():
+    keys = key.get_pressed()
+
+    #rotation
+    if keys[K_LEFT]:
+        player.yawv -= 1
+    if keys[K_RIGHT]:
+        player.yawv += 1
+    if keys[K_UP]:
+        player.pitchv += 1
+    if keys[K_DOWN]:
+        player.pitchv -= 1
+
+    #movement
+    if keys[K_w]:
+        player.zvel += 0.05*cos(radians(cam.yaw))
+        player.xvel += 0.05*sin(radians(cam.yaw))
+    if keys[K_s]:
+        player.zvel -= 0.05*cos(radians(cam.yaw))
+        player.xvel -= 0.05*sin(radians(cam.yaw))
+    if keys[K_a]:
+        player.zvel -= 0.05*cos(radians(cam.yaw+90))
+        player.xvel -= 0.05*sin(radians(cam.yaw+90))
+    if keys[K_d]:
+        player.zvel += 0.05*cos(radians(cam.yaw+90))
+        player.xvel += 0.05*sin(radians(cam.yaw+90))
+    if keys[K_SPACE]:
+        if cam.y <= 0:
+            player.yvel += 1
+
+while running:
+    for gevent in event.get():
+        if gevent.type == QUIT:
+            running = False
+    screen.fill('white')
+    keyinputs()
+    render()
+    cam.x, cam.y, cam.z = cam.x + player.xvel, cam.y + player.yvel, cam.z + player.zvel
+    cam.pitch, cam.yaw, cam.roll = cam.pitch + player.pitchv, cam.yaw + player.yawv, cam.roll + player.rollv
+    player.xvel, player.yvel, player.zvel = player.xvel * 0.85, player.yvel * 0.85, player.zvel * 0.85
+    player.pitchv, player.yawv, player.rollv = player.pitchv * 0.7, player.yawv * 0.7, player.rollv * 0.7
+    if cam.y > 0:
+        player.yvel -= 0.1
+    else:
+        player.yvel = 0
+        cam.y += 0.001
+    display.flip()
+    display.update()
+    clock.tick(60)
+quit()
