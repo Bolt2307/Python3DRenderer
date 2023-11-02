@@ -69,7 +69,7 @@ def render ():
             if z < 100: #stops rendering from 100 units away
                 if z > 0: #stops rendering when behind the camera
                     show = True
-            points.append((x * cam.fov/z+scrn.width/2, -y * cam.fov/z+scrn.height/2))
+            points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2))
         if show == True:
             draw.polygon(screen, 'black', points, 0)
 
