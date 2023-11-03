@@ -33,3 +33,9 @@ Lrae1207 : 2/11/2023
 + Re-arranged initializations and functions
 + Added temporary demonstration of color system that creates faces with random colors
 Note: Object occlusion still needs to be implemented
+
+Bolt2307 : 2/11/2023
++ Tried to add Z-sorting for object occlusion, did not work
++ Broke distance-based rendering in the process
++ Made background color randomize :)
++ Added comments to keep Lrae from yelling at me C:
