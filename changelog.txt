@@ -25,3 +25,11 @@ Lrae1207 : 2/11/2023
 - Removed player class as it was unnecessary
 + Changed name of fov to focal_length
 + Changed TODO.txt
++ Updated screen class
++ Created constructor for Vector3
++ Created Object class for storing object data
++ Created face class to bundle tuples and colors
++ Updated render function to account for new class system
++ Re-arranged initializations and functions
++ Added temporary demonstration of color system that creates faces with random colors
+Note: Object occlusion still needs to be implemented
