@@ -39,3 +39,6 @@ Bolt2307 : 2/11/2023
 + Broke distance-based rendering in the process
 + Made background color randomize :)
 + Added comments to keep Lrae from yelling at me C:
+
+Bolt2307 : 3/11/2023
+- Reverted all changes from past update
