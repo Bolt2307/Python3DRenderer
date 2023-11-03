@@ -1,5 +1,6 @@
 from pygame import*
 from math import*
+import random
 
 # Class definitions
 
@@ -7,13 +8,50 @@ from math import*
 class Vector3:
     x,y,z = 0,0,0
 
+    def __init__(self,xVal,yVal,zVal):
+        x,y,z = xVal,yVal,zVal
 # Represents camera controlled by the cam.velocity
 class Camera:
-    position = Vector3()
-    rotation = Vector3() # x = rotation.y, y = rotation.x, z = roll
-    velocity = Vector3()
+    position = Vector3(0,0,0)
+    rotation = Vector3(0,0,0) # x = rotation.y, y = rotation.x, z = roll
+    velocity = Vector3(0,0,0)
     focal_length = 400
-	
+
+class RGBColor:
+    r = 0
+    g = 0
+    b = 0
+    def __init__(self,red,green,blue):
+        self.r,self.g,self.b = red,green,blue
+
+    def to_tuple(self):
+        return (self.r,self.g,self.b)
+
+class Face:
+    col = RGBColor(0,0,0)
+    connection_vertices = (0,0,0)
+
+    def __init__(self,vertices,color):
+        self.col = color
+        self.connection_vertices = vertices
+
+class Object:
+    position = Vector3(0,0,0)
+
+    wire_thickness = 2
+    wire_color = RGBColor(0,0,0)
+
+    renderable = True
+    visible = True
+
+    vertices = [] # List of all points as tuples 
+    faces = [] # List of all faces as Faces
+
+    def set_color(self,col):
+        for face in self.faces:
+            face.col = col
+
+
 pause = False
 pausecooldown = 0
 crosshairspread = 0
@@ -36,11 +74,15 @@ class Screen:
 cam = Camera()
 scrn = Screen()
 
-# Put these into classes with vertex data and color later
-vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), #cube
+objects = []
+cube = Object()
+cube.vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), #cube
             (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1),
             (2, -1, -1), (4, -1, -1), (2, -1, 1), (4, -1, 1), (4, 1, -1), (2, 1, -1)] #wedge 1st=8
-faces = [
+cube.faces = []
+
+# I'll make functions for creating a pre-fab later
+f = [
     (0, 1, 2), (2, 3, 0), #Cube
     (0, 4, 5), (5, 1, 0),
     (0, 4, 3), (4, 7, 3),
@@ -51,27 +93,37 @@ faces = [
     (8, 9, 11), (8, 10, 11),
     (8, 9, 12), (8, 13, 12),
     (13, 10, 12), (12, 11, 10)]
+for v in f:
+    cube.faces.append(Face(v,RGBColor(random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))))
+
+
+objects.append(cube)
 
 def rotate_point(x, y, r):
   return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
 
 def render ():
-    for face in faces:
-        points = []
-        for vertex in face:
-            x, y, z = vertices[vertex]
-            x, y, z = x - cam.position.x, y - cam.position.y, z - cam.position.z
-            yaw, pitch, roll = radians(cam.rotation.x), radians(cam.rotation.y), radians(cam.rotation.z)
-            x, z = rotate_point(x, z, yaw)
-            y, z = rotate_point(y, z, pitch)
-            x, y = rotate_point(x, y, roll)
-            show = False
-            if z < 100: #stops rendering from 100 units away
-                if z > 0: #stops rendering when behind the camera
-                    show = True
-            points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2))
-        if show == True:
-            draw.polygon(screen, 'black', points, 0)
+    for obj in objects:
+        face_index = 0
+        for face in obj.faces:
+            points = []
+            for vertex in face.connection_vertices:
+                x, y, z = obj.vertices[vertex]
+                x, y, z = x - cam.position.x, y - cam.position.y, z - cam.position.z
+                yaw, pitch, roll = radians(cam.rotation.x), radians(cam.rotation.y), radians(cam.rotation.z)
+                x, z = rotate_point(x, z, yaw)
+                y, z = rotate_point(y, z, pitch)
+                x, y = rotate_point(x, y, roll)
+                show = False
+                if z < 100: #stops rendering from 100 units away
+                    if z > 0: #stops rendering when behind the camera
+                        show = True
+                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2))
+            if show == True:
+                draw.polygon(screen, (face.col.r,face.col.g,face.col.b), points, 0) # shape
+                if obj.wire_thickness > 0:
+                    draw.polygon(screen, (obj.wire_color.to_tuple()), points, obj.wire_thickness) # outline
+            face_index += 1
 
 def gui ():
     global crosshairspread
