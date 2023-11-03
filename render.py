@@ -106,11 +106,10 @@ def zsort (input):
     return input[0][0][2]
 
 def render ():
-    faces = []
     for obj in objects:
         for face in obj.points:
+            show = False
             points = []
-            show = True
             for vertex in face.connection_vertices:
                 x, y, z = obj.vertices[vertex]
                 x, y, z = x - cam.position.x, y - cam.position.y, z - cam.position.z
@@ -118,18 +117,12 @@ def render ():
                 x, z = rotate_point(x, z, yaw)
                 y, z = rotate_point(y, z, pitch)
                 x, y = rotate_point(x, y, roll)
-                if z > 100: #stops rendering from 100 units away (broken)
-                    if z < 0: #stops rendering when behind the camera (broken)
-                        show = False
-                points.append((x,y,z)) #vector3 coord
+                if z < 100: #stops rendering from 100 units away (broken)
+                    if z > 0: #stops rendering when behind the camera (broken)
+                        show = True
+                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector3 coord
             if show == True:
-                faces.append([((points)), obj.wire_thickness, (face.col.r,face.col.g,face.col.b)]) #appends to master render list
-    faces.sort(key=zsort) #sorts by Z value, lowest number comes first
-    for i in range(len(faces)):
-        points = []
-        for point in range(len(faces[i][0])): #changes vector3s into vector2s
-            points.append((faces[i][0][point][0] * cam.focal_length/faces[i][0][point][2]+scrn.width/2, -faces[i][0][point][1] * cam.focal_length/faces[i][0][point][2]+scrn.height/2))
-        draw.polygon(screen, faces[i][2], points, faces[i][1]) #shape
+                draw.polygon(screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness) #shape
 
 def gui ():
     global crosshairspread
