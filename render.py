@@ -38,17 +38,17 @@ class Face:
 class Object:
     position = Vector3(0,0,0)
 
-    wire_thickness = 2
+    wire_thickness = 0
     wire_color = RGBColor(0,0,0)
 
     renderable = True
     visible = True
 
     vertices = [] # List of all points as tuples 
-    faces = [] # List of all faces as Faces
+    points = [] # List of all points as points
 
     def set_color(self,col):
-        for face in self.faces:
+        for face in self.points:
             face.col = col
 
 
@@ -79,7 +79,7 @@ cube = Object()
 cube.vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), #cube
             (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1),
             (2, -1, -1), (4, -1, -1), (2, -1, 1), (4, -1, 1), (4, 1, -1), (2, 1, -1)] #wedge 1st=8
-cube.faces = []
+cube.points = []
 
 # I'll make functions for creating a pre-fab later
 f = [
@@ -94,7 +94,7 @@ f = [
     (8, 9, 12), (8, 13, 12),
     (13, 10, 12), (12, 11, 10)]
 for v in f:
-    cube.faces.append(Face(v,RGBColor(random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))))
+    cube.points.append(Face(v,RGBColor(random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))))
 
 
 objects.append(cube)
@@ -102,11 +102,15 @@ objects.append(cube)
 def rotate_point(x, y, r):
   return x * cos(r) - y * sin(r), x * sin(r) + y * cos(r)
 
+def zsort (input):
+    return input[0][0][2]
+
 def render ():
+    faces = []
     for obj in objects:
-        face_index = 0
-        for face in obj.faces:
+        for face in obj.points:
             points = []
+            show = True
             for vertex in face.connection_vertices:
                 x, y, z = obj.vertices[vertex]
                 x, y, z = x - cam.position.x, y - cam.position.y, z - cam.position.z
@@ -114,16 +118,18 @@ def render ():
                 x, z = rotate_point(x, z, yaw)
                 y, z = rotate_point(y, z, pitch)
                 x, y = rotate_point(x, y, roll)
-                show = False
-                if z < 100: #stops rendering from 100 units away
-                    if z > 0: #stops rendering when behind the camera
-                        show = True
-                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2))
+                if z > 100: #stops rendering from 100 units away (broken)
+                    if z < 0: #stops rendering when behind the camera (broken)
+                        show = False
+                points.append((x,y,z)) #vector3 coord
             if show == True:
-                draw.polygon(screen, (face.col.r,face.col.g,face.col.b), points, 0) # shape
-                if obj.wire_thickness > 0:
-                    draw.polygon(screen, (obj.wire_color.to_tuple()), points, obj.wire_thickness) # outline
-            face_index += 1
+                faces.append([((points)), obj.wire_thickness, (face.col.r,face.col.g,face.col.b)]) #appends to master render list
+    faces.sort(key=zsort) #sorts by Z value, lowest number comes first
+    for i in range(len(faces)):
+        points = []
+        for point in range(len(faces[i][0])): #changes vector3s into vector2s
+            points.append((faces[i][0][point][0] * cam.focal_length/faces[i][0][point][2]+scrn.width/2, -faces[i][0][point][1] * cam.focal_length/faces[i][0][point][2]+scrn.height/2))
+        draw.polygon(screen, faces[i][2], points, faces[i][1]) #shape
 
 def gui ():
     global crosshairspread
@@ -191,7 +197,10 @@ def handle_control ():
                 mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
     else:
         pausecooldown -= 0.1 #makes sure that pauseape is not held and spammed
+
+bgcolor = (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255))
 cam.position.z = -10
+
 
 while running:
     # Handle events
@@ -199,7 +208,7 @@ while running:
         if gevent.type == QUIT:
             running = False
     # Background color
-    screen.fill('white')
+    screen.fill(bgcolor)
     
 	# Take in user input
     handle_control()
