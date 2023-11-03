@@ -15,6 +15,7 @@ class Camera:
     position = Vector3(0,0,0)
     rotation = Vector3(0,0,0) # x = rotation.y, y = rotation.x, z = roll
     velocity = Vector3(0,0,0)
+    height = 0
     focal_length = 400
 
 class RGBColor:
@@ -112,7 +113,7 @@ def render ():
             points = []
             for vertex in face.connection_vertices:
                 x, y, z = obj.vertices[vertex]
-                x, y, z = x - cam.position.x, y - cam.position.y, z - cam.position.z
+                x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
                 yaw, pitch, roll = radians(cam.rotation.x), radians(cam.rotation.y), radians(cam.rotation.z)
                 x, z = rotate_point(x, z, yaw)
                 y, z = rotate_point(y, z, pitch)
@@ -172,6 +173,13 @@ def handle_control ():
         if keys[K_SPACE]:
             if cam.position.y <= 0:
                 cam.velocity.y += 1
+        if keys[K_LCTRL]:
+            if cam.height > -1:
+                cam.height -= 0.2
+        else:
+            if cam.height < 0:
+                cam.height += 0.2
+
     #misc
     else:
         if keys[K_e]: #exits the game if e is pressed in pause
