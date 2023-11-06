@@ -1,6 +1,7 @@
 from pygame import*
 from math import*
 import random
+import time
 
 # Class definitions
 
@@ -59,8 +60,9 @@ crosshairspread = 0
 speed = 0.025
 
 init()
+font.init()
+analytics_font = font.SysFont('cousine', 15)
 screen = display.set_mode((0,0), FULLSCREEN)
-clock = time.Clock()
 running = True
 display.set_caption('YEAH BABY!')
 mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
@@ -107,6 +109,7 @@ def zsort (input):
     return input[0][0][2]
 
 def render ():
+    t0 = time.process_time_ns()
     for obj in objects:
         for face in obj.points:
             show = False
@@ -124,8 +127,10 @@ def render ():
                 points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector3 coord
             if show == True:
                 draw.polygon(screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness) #shape
+    return time.process_time_ns()-t0
 
 def gui ():
+    t0 = time.process_time_ns()
     global crosshairspread
     crosshairspread = speed * 100
     
@@ -134,8 +139,10 @@ def gui ():
     draw.line(screen, 'red', (scrn.width/2+crosshairspread, scrn.height/2), (scrn.width/2+10+crosshairspread, scrn.height/2)) #horizontal right
     draw.line(screen, 'red', (scrn.width/2, scrn.height/2-10-crosshairspread), (scrn.width/2, scrn.height/2-crosshairspread)) #vertical top
     draw.line(screen, 'red', (scrn.width/2, scrn.height/2+crosshairspread), (scrn.width/2, scrn.height/2+10+crosshairspread)) #vertical vertical bottom
+    return time.process_time_ns()-t0
 
 def handle_control ():
+    t0 = time.process_time_ns()
     global pausecooldown
     global pause
     global speed
@@ -198,21 +205,13 @@ def handle_control ():
                 mouse.set_cursor(SYSTEM_CURSOR_CROSSHAIR)
     else:
         pausecooldown -= 0.1 #makes sure that pauseape is not held and spammed
+    return time.process_time_ns()-t0
 
 bgcolor = (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255))
 cam.position.z = -10
 
-
-while running:
-    # Handle events
-    for gevent in event.get():
-        if gevent.type == QUIT:
-            running = False
-    # Background color
-    screen.fill(bgcolor)
-    
-	# Take in user input
-    handle_control()
+def update():
+    t0 = time.process_time_ns()
     if pause == False:
         mouse.set_pos(scrn.width/2, scrn.height/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
@@ -222,15 +221,64 @@ while running:
             cam.velocity.y -= 0.05
         else:
             cam.velocity.y = 0
-            cam.position.y += 0.001
-    
-	# Render objects
-    render()
+            cam.position.y = 0
+    return time.process_time_ns()-t0
 
-    # Render GUI
-    gui()
+def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D):
+    cntrl_text = analytics_font.render('control_update: ' + str(cntrl_time / 1000) + ' us', False, (0, 0, 0))
+    engine_update_text = analytics_font.render('engine_update: ' + str(engine_update_time / 1000) + ' us', False, (0, 0, 0))
+    render_3D_text = analytics_font.render('render_time_3D: ' + str(render_time_3D / 1000) + ' us', False, (0, 0, 0))
+    render_2D_text = analytics_font.render('render_time_2D: ' + str(render_time_2D / 1000) + ' us', False, (0, 0, 0))
+    total_text = analytics_font.render('total: ' + str((render_time_2D + cntrl_time + engine_update_time + render_time_3D) / 1000000) + ' ms', False, (0, 0, 0))
+    screen.blit(cntrl_text, (0,0))
+    screen.blit(engine_update_text, (0,20))
+    screen.blit(render_3D_text, (0,40))
+    screen.blit(render_2D_text, (0,60))
+    screen.blit(total_text, (0,80))
+
+frame = 0
+cntrl_time = 0
+engine_update_time = 0
+render_time_3D = 0
+render_time_2D = 0
+time_elapsed = 0
+while running:
+    frame += 1
+    # Handle events
+    for gevent in event.get():
+        if gevent.type == QUIT:
+            running = False
+    # Background color
+    screen.fill(bgcolor)
     
+    # Print elapsed time ever n frames
+    if frame % 60 == 0:
+        # Take user input
+        cntrl_time = handle_control()
+
+        # Update
+        engine_update_time = update()
+        
+        # Render objects
+        render_time_3D = render()
+
+        # Render GUI
+        render_time_2D = gui()
+        print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D)
+    else:
+        # Take user input
+        handle_control()
+
+        # Update
+        update()
+        
+        # Render objects
+        render()
+
+        # Render GUI
+        gui()
+        print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D)
+
     display.flip() # Invert screen
     display.update() # Display new render
-    clock.tick(1000) #1000 fps
 quit()
