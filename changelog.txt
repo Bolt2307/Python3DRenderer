@@ -48,3 +48,4 @@ Lrae1207 : 6/11/2023
 + Fixed idle position oscillation
 + Removed clocking system (it was deprectated)
 + Added analytics display
++ Added non-functional collider object
