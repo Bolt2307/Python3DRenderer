@@ -125,10 +125,7 @@ def render ():
                 if z > 100: # stops rendering from 100 units away
                     show = False
                 if z < 0: # segment the polygon
-                    for v in face.connection_vertices:
-                        if v != vertex: # for every other vertex
-                            x1, y1, z1 = obj.vertices[v]
-                            x1, y1, z1 = x1 - cam.position.x, y1 - cam.position.y - cam.height, z1 - cam.position.z
+                    show = False
                             
                 points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector2 coord
                 if abs(points[len(points)-1][0]) > scrn.width:
