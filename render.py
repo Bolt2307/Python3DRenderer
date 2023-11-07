@@ -109,7 +109,7 @@ def zsort (input):
 def render ():
     for obj in objects:
         for face in obj.points:
-            show = False
+            show = True
             points = []
             for vertex in face.connection_vertices:
                 x, y, z = obj.vertices[vertex]
@@ -118,13 +118,18 @@ def render ():
                 x, z = rotate_point(x, z, yaw)
                 y, z = rotate_point(y, z, pitch)
                 x, y = rotate_point(x, y, roll)
-                if z < 100: #stops rendering from 100 units away (broken)
-                    if z > 0: #stops rendering when behind the camera (broken)
-                        show = True
-                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector3 coord
+                if z > 100: #stops rendering from 100 units away (broken)
+                    show = False
+                if z < 0: #stops rendering when behind the camera (broken)
+                    show = False
+                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector2 coord
+                if abs(points[len(points)-1][0]) > scrn.width:
+                    show = False
+                if abs(points[len(points)-1][1]) > scrn.height:
+                    show = False
             if show == True:
                 draw.polygon(screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness) #shape
-
+                
 def gui ():
     global crosshairspread
     crosshairspread = speed * 100
