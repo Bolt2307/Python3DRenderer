@@ -43,3 +43,6 @@ Bolt2307 : 2/11/2023
 Bolt2307 : 3/11/2023
 - Reverted all changes from past update
 + Added croutching cuz funny hehe
+
+Bolt2307 : 3/11/2023
++ Camera Culling, objects outside of the camera will not render
