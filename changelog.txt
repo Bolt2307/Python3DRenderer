@@ -49,3 +49,6 @@ Lrae1207 : 6/11/2023
 + Removed clocking system (it was deprectated)
 + Added analytics display
 + Added non-functional collider object
+
+Bolt2307 : 6/11/2023
++ Camera Culling, objects outside of the camera will not render
