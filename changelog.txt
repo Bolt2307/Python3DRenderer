@@ -46,3 +46,9 @@ Bolt2307 : 3/11/2023
 
 Bolt2307 : 3/11/2023
 + Camera Culling, objects outside of the camera will not render
+
+Lrae1207 : 7/11/2023
++ Fixed idle position bounce glitch
++ Replaced clocking system (it was deprecated)
++ Added analytics display
++ Fixed pygame/math module collisions
