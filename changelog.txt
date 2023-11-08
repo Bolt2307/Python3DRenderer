@@ -44,7 +44,7 @@ Bolt2307 : 3/11/2023
 - Reverted all changes from past update
 + Added croutching cuz funny hehe
 
-Bolt2307 : 3/11/2023
+Bolt2307 : 7/11/2023
 + Camera Culling, objects outside of the camera will not render
 
 Lrae1207 : 7/11/2023
@@ -52,3 +52,6 @@ Lrae1207 : 7/11/2023
 + Replaced clocking system (it was deprecated)
 + Added analytics display
 + Fixed pygame/math module collisions
+
+Bolt2307 : 8/11/2023
++ Added the ability to toggle specs in pause menu with F
