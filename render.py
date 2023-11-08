@@ -53,7 +53,7 @@ class Object:
         for face in self.points:
             face.col = col
 
-
+specstog = True
 pause = False
 pausecooldown = 0
 crosshairspread = 0
@@ -106,9 +106,6 @@ objects.append(cube)
 def rotate_point(x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
 
-def zsort (input):
-    return input[0][0][2]
-
 def render ():
     t0 = time.perf_counter_ns()
     for obj in objects:
@@ -122,19 +119,12 @@ def render ():
                 x, z = rotate_point(x, z, yaw)
                 y, z = rotate_point(y, z, pitch)
                 x, y = rotate_point(x, y, roll)
-                if z > 100: # stops rendering from 100 units away
+                if (z < 0) | (z > 100):
                     show = False
-                if z < 0: # segment the polygon
-                    show = False
-                            
-                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector2 coord
-                if abs(points[len(points)-1][0]) > scrn.width:
-                    show = False
-                if abs(points[len(points)-1][1]) > scrn.height:
-                    show = False
+                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector2 coords
             if show == True:
                 pygame.draw.polygon(screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness) #shape
-    return time.perf_counter_ns()-t0
+    return time.perf_counter_ns() - t0
                 
 def gui ():
     t0 = time.perf_counter_ns()
@@ -151,6 +141,7 @@ def gui ():
 def handle_control ():
     t0 = time.perf_counter_ns()
     global pausecooldown
+    global specstog
     global pause
     global speed
     keys = pygame.key.get_pressed()
@@ -198,7 +189,11 @@ def handle_control ():
     else:
         if keys[pygame.K_e]: #exits the game if e is pressed in pause
             pygame.QUIT()
-
+        if keys[pygame.K_f]:
+            if specstog == True:
+                specstog = False
+            elif specstog == False:
+                specstog = True
     if pausecooldown < 0: #pauses the game on pauseape
         if keys[pygame.K_ESCAPE]:
             pausecooldown = 0.2
@@ -293,8 +288,8 @@ while running:
             # Update measurement variables
             measured_fps = 1/time_elapsed
             idle_time = time_elapsed
-
-            print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, time_elapsed, measured_fps)
+            if specstog == True:
+                print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, time_elapsed, measured_fps)
         else:
             # Take user input
             handle_control()
@@ -307,7 +302,8 @@ while running:
 
             # Render GUI
             gui()
-            print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, measured_fps)
+            if specstog == True:
+                print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, measured_fps)
 
         pygame.display.flip() # Invert screen
         pygame.display.update() # Display new render
