@@ -108,10 +108,12 @@ def rotate_point(x, y, r):
 
 def render ():
     t0 = time.perf_counter_ns()
+    zbuffer = []
     for obj in objects:
         for face in obj.points:
             show = True
             points = []
+            depthval = 0
             for vertex in face.connection_vertices:
                 x, y, z = obj.vertices[vertex]
                 x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
@@ -122,8 +124,13 @@ def render ():
                 if (z < 0) | (z > 100):
                     show = False
                 points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector2 coords
+                depthval += z
+            depthval = depthval/3
             if show == True:
-                pygame.draw.polygon(screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness) #shape
+                zbuffer.append([screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness, depthval]) #shape
+    zbuffer.sort(key=lambda x: x[4], reverse=True)
+    for face in zbuffer:
+        pygame.draw.polygon(face[0], face[1], face[2], face[3])
     return time.perf_counter_ns() - t0
                 
 def gui ():
