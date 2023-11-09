@@ -242,7 +242,7 @@ scrn = Screen(screen.get_width(), screen.get_height())
 
 objects = []
 cube = Object()
-cube.vertices = [Vector3(1, -1, -1), Vector3( 1, -1, -1), Vector3( 1,  1, -1), Vector3(-1,  1, -1), #cube
+cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), Vector3( 1,  1, -1), Vector3(-1,  1, -1), #cube
             Vector3(-1, -1,  1), Vector3( 1, -1,  1), Vector3( 1,  1,  1), Vector3(-1,  1,  1),
             Vector3(2, -1, -1), Vector3(4, -1, -1), Vector3(2, -1, 1), Vector3(4, -1, 1), Vector3(4, 1, -1), Vector3(2, 1, -1)] #wedge 1st=8
 cube.faces = []
