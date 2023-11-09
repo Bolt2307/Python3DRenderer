@@ -55,3 +55,6 @@ Lrae1207 : 7/11/2023
 
 Bolt2307 : 8/11/2023
 + Added the ability to toggle specs in pause menu with F
+
+Bolt2307 : 9/11/2023
++ Added Z sorting before rendering (FINALLY!)
