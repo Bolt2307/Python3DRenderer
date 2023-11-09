@@ -10,7 +10,11 @@ class Vector3:
     x,y,z = 0,0,0
 
     def __init__(self,xVal,yVal,zVal):
-        x,y,z = xVal,yVal,zVal
+        self.x,self.y,self.z = xVal,yVal,zVal
+
+    def to_tuple(self):
+        return (self.x,self.y,self.z)
+
 # Represents camera controlled by the cam.velocity
 class Camera:
     position = Vector3(0,0,0)
@@ -31,11 +35,11 @@ class RGBColor:
 
 class Face:
     col = RGBColor(0,0,0)
-    connection_vertices = (0,0,0)
+    connected_vertices = (0,0,0)
 
     def __init__(self,vertices,color):
         self.col = color
-        self.connection_vertices = vertices
+        self.connected_vertices = vertices
 
 class Object:
     position = Vector3(0,0,0)
@@ -46,62 +50,20 @@ class Object:
     renderable = True
     visible = True
 
-    vertices = [] # List of all points as tuples 
-    points = [] # List of all points as points
+    vertices = [] # List of all points as Vector3 
+    faces = [] # List of all faces as faces
 
-    def set_color(self,col):
-        for face in self.points:
+    def set_color(self,col): # Set the entire object to a color
+        for face in self.faces:
             face.col = col
-
-specstog = True
-pause = False
-pausecooldown = 0
-crosshairspread = 0
-speed = 0.025
-
-pygame.init()
-pygame.font.init()
-analytics_font = pygame.font.SysFont('cousine', 20)
-screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
-clock = pygame.time.Clock()
-running = True
-pygame.display.set_caption('YEAH BABY!')
-pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
-pygame.mouse.set_visible(False)
 
 # Dimensions of the screen
 class Screen:
-    width = screen.get_width()
-    height = screen.get_height()
-    
-# Instantiate classes
-cam = Camera()
-scrn = Screen()
+    width, height = 0,0
 
-objects = []
-cube = Object()
-cube.vertices = [(-1, -1, -1), ( 1, -1, -1), ( 1,  1, -1), (-1,  1, -1), #cube
-            (-1, -1,  1), ( 1, -1,  1), ( 1,  1,  1), (-1,  1,  1),
-            (2, -1, -1), (4, -1, -1), (2, -1, 1), (4, -1, 1), (4, 1, -1), (2, 1, -1)] #wedge 1st=8
-cube.points = []
-
-# I'll make functions for creating a pre-fab later
-f = [
-    (0, 1, 2), (2, 3, 0), #Cube
-    (0, 4, 5), (5, 1, 0),
-    (0, 4, 3), (4, 7, 3),
-    (5, 4, 7), (7, 6, 5),
-    (7, 6, 3), (6, 2, 3),
-    (5, 1, 2), (2, 6, 5),
-    (8, 10, 13), (9, 11, 12), #Wedge
-    (8, 9, 11), (8, 10, 11),
-    (8, 9, 12), (8, 13, 12),
-    (13, 10, 12), (12, 11, 10)]
-for v in f:
-    cube.points.append(Face(v,RGBColor(random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))))
-
-
-objects.append(cube)
+    def __init__(self,width,height):
+        self.width = width
+        self.height = height
 
 def rotate_point(x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
@@ -109,28 +71,37 @@ def rotate_point(x, y, r):
 def render ():
     t0 = time.perf_counter_ns()
     zbuffer = []
-    for obj in objects:
-        for face in obj.points:
-            show = True
+
+    for obj in objects: # Create the zbuffer containing unsorted shapes
+        for face in obj.faces:
+            show = True # The object will be rendered unless one of its vertices is out-of-scope
             points = []
             depthval = 0
-            for vertex in face.connection_vertices:
-                x, y, z = obj.vertices[vertex]
+
+            for vertex in face.connected_vertices:
+                x,y,z = obj.vertices[vertex].to_tuple()
                 x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
                 yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
                 x, z = rotate_point(x, z, yaw)
                 y, z = rotate_point(y, z, pitch)
                 x, y = rotate_point(x, y, roll)
-                if (z < 0) | (z > 100):
+
+                if (z < 0) | (z > 100): # Do not render clipping or out-of-scope objects
                     show = False
-                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) #vector2 coords
-                depthval += z
-            depthval = depthval/3
+                    break # There is no need to render the rest of the points if it is outside of render distance
+
+                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) # vector2 coords
+                depthval += z # add z to the sum of the z values
+
+            depthval /= len(face.connected_vertices) # depthval now stores the z of the object's center
+
             if show == True:
-                zbuffer.append([screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness, depthval]) #shape
-    zbuffer.sort(key=lambda x: x[4], reverse=True)
-    for face in zbuffer:
+                zbuffer.append([screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness, depthval]) # Store the info in zbuffer
+
+    zbuffer.sort(key=lambda x: x[4], reverse=True) # Sort z buffer by the z distance from the camera
+    for face in zbuffer: # Draw each face
         pygame.draw.polygon(face[0], face[1], face[2], face[3])
+
     return time.perf_counter_ns() - t0
                 
 def gui ():
@@ -246,6 +217,54 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
     screen.blit(total_text, (5,80))
     screen.blit(idle_text, (5,100))
     screen.blit(fps_text, (5,120))
+
+# Main section
+
+specstog = True
+pause = False
+pausecooldown = 0
+crosshairspread = 0
+speed = 0.025
+
+pygame.init()
+pygame.font.init()
+analytics_font = pygame.font.SysFont('cousine', 20)
+screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+clock = pygame.time.Clock()
+running = True
+pygame.display.set_caption('YEAH BABY!')
+pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
+pygame.mouse.set_visible(False)
+    
+# Instantiate classes
+cam = Camera()
+scrn = Screen(screen.get_width(), screen.get_height())
+
+objects = []
+cube = Object()
+cube.vertices = [Vector3(1, -1, -1), Vector3( 1, -1, -1), Vector3( 1,  1, -1), Vector3(-1,  1, -1), #cube
+            Vector3(-1, -1,  1), Vector3( 1, -1,  1), Vector3( 1,  1,  1), Vector3(-1,  1,  1),
+            Vector3(2, -1, -1), Vector3(4, -1, -1), Vector3(2, -1, 1), Vector3(4, -1, 1), Vector3(4, 1, -1), Vector3(2, 1, -1)] #wedge 1st=8
+cube.faces = []
+
+# I'll make functions for creating a pre-fab later
+f = [
+    (0, 1, 2), (2, 3, 0), #Cube
+    (0, 4, 5), (5, 1, 0),
+    (0, 4, 3), (4, 7, 3),
+    (5, 4, 7), (7, 6, 5),
+    (7, 6, 3), (6, 2, 3),
+    (5, 1, 2), (2, 6, 5),
+    (8, 10, 13), (9, 11, 12), #Wedge
+    (8, 9, 11), (8, 10, 11),
+    (8, 9, 12), (8, 13, 12),
+    (13, 10, 12), (12, 11, 10)]
+
+for v in f:
+    cube.faces.append(Face(v,RGBColor(random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))))
+
+
+objects.append(cube)
 
 bgcolor = (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255))
 cam.position.z = -10
