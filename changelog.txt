@@ -62,3 +62,7 @@ Bolt2307 : 9/11/2023
 
 Bolt2307 : 10/11/2023
 + Fixed Object classes and finished implementing others
++ Added Orientation and fixed position attributes on objects
++ Added the wedge back and made it spin
++ Added tick variable that increments after every update
++ Made the cube go up and down with a sine function
