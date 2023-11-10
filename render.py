@@ -230,7 +230,7 @@ Screen.fullwidth, Screen.fullheight = screen.get_width(), screen.get_height() #f
 screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 running = True
-pygame.display.set_caption('YEAH BABY!')
+pygame.display.set_caption('Python (Pygame) - 3D Renderer')
 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
 pygame.mouse.set_visible(False)
     
