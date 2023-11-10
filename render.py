@@ -14,6 +14,10 @@ class Vector3:
 
     def to_tuple(self):
         return (self.x,self.y,self.z)
+    
+class Screen:
+    fullheight = 0
+    fullwidth = 0
 
 # Represents camera controlled by the cam.velocity
 class Camera:
@@ -57,14 +61,6 @@ class Object:
         for face in self.faces:
             face.col = col
 
-# Dimensions of the screen
-class Screen:
-    width, height = 0,0
-
-    def __init__(self,width,height):
-        self.width = width
-        self.height = height
-
 def rotate_point(x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
 
@@ -90,7 +86,7 @@ def render ():
                     show = False
                     break # There is no need to render the rest of the points if it is outside of render distance
 
-                points.append((x * cam.focal_length/z+scrn.width/2, -y * cam.focal_length/z+scrn.height/2)) # vector2 coords
+                points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight))) # vector2 coords
                 depthval += z # add z to the sum of the z values
 
             depthval /= len(face.connected_vertices) # depthval now stores the z of the object's center
@@ -110,10 +106,10 @@ def gui ():
     crosshairspread = speed * 100
     
     #crosshairs
-    pygame.draw.line(screen, 'red', (scrn.width/2-10-crosshairspread, scrn.height/2), (scrn.width/2-crosshairspread, scrn.height/2)) #horizontal left
-    pygame.draw.line(screen, 'red', (scrn.width/2+crosshairspread, scrn.height/2), (scrn.width/2+10+crosshairspread, scrn.height/2)) #horizontal right
-    pygame.draw.line(screen, 'red', (scrn.width/2, scrn.height/2-10-crosshairspread), (scrn.width/2, scrn.height/2-crosshairspread)) #vertical top
-    pygame.draw.line(screen, 'red', (scrn.width/2, scrn.height/2+crosshairspread), (scrn.width/2, scrn.height/2+10+crosshairspread)) #vertical vertical bottom
+    pygame.draw.line(screen, 'red', (screen.get_width()/2-10-crosshairspread, screen.get_height()/2), (screen.get_width()/2-crosshairspread, screen.get_height()/2)) #horizontal left
+    pygame.draw.line(screen, 'red', (screen.get_width()/2+crosshairspread, screen.get_height()/2), (screen.get_width()/2+10+crosshairspread, screen.get_height()/2)) #horizontal right
+    pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2-10-crosshairspread), (screen.get_width()/2, screen.get_height()/2-crosshairspread)) #vertical top
+    pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2+crosshairspread), (screen.get_width()/2, screen.get_height()/2+10+crosshairspread)) #vertical vertical bottom
     return time.perf_counter_ns()-t0
 
 def handle_control ():
@@ -184,13 +180,13 @@ def handle_control ():
                 pygame.mouse.set_visible(False)
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
     else:
-        pausecooldown -= 0.1 #makes sure that pauseape is not held and spammed
-    return time.perf_counter_ns()-t0
+        pausecooldown -= 0.1 #makes sure that pause key is not held and spammed
+    return time.perf_counter_ns() - t0
 
 def update():
     t0 = time.perf_counter_ns()
     if pause == False:
-        pygame.mouse.set_pos(scrn.width/2, scrn.height/2) #mouse "lock"
+        pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
@@ -229,7 +225,9 @@ speed = 0.025
 pygame.init()
 pygame.font.init()
 analytics_font = pygame.font.SysFont('cousine', 20)
-screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+Screen.fullwidth, Screen.fullheight = screen.get_width(), screen.get_height() #finds fullscreen dim
+screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 running = True
 pygame.display.set_caption('YEAH BABY!')
@@ -238,7 +236,6 @@ pygame.mouse.set_visible(False)
     
 # Instantiate classes
 cam = Camera()
-scrn = Screen(screen.get_width(), screen.get_height())
 
 objects = []
 cube = Object()
