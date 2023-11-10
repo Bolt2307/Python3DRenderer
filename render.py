@@ -45,6 +45,8 @@ class Face:
 
 class Object:
     position = Vector3(0,0,0)
+    orientation = Vector3(0, 0, 0)
+    origin = Vector3(0, 0, 0)
 
     wire_thickness = 0
     wire_color = RGBColor(0,0,0)
@@ -54,8 +56,10 @@ class Object:
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
 
-    def __init__ (self, position, wire_thickness, visible, vertices, faces):
+    def __init__ (self, position, orientation, origin, wire_thickness, visible, vertices, faces):
         self.position = position
+        self.orientation = orientation
+        self.origin = origin
         self.wire_thickness = wire_thickness
         self.visible = visible
         self.vertices = vertices
@@ -73,30 +77,39 @@ def render ():
     zbuffer = []
 
     for obj in objects: # Create the zbuffer containing unsorted shapes
-        for face in obj.faces:
-            show = True # The object will be rendered unless one of its vertices is out-of-scope
-            points = []
-            depthval = 0
+        if obj.visible == True:
+            for face in obj.faces:
+                show = True # The object will be rendered unless one of its vertices is out-of-scope
+                points = []
+                depthval = 0
 
-            for vertex in face.vertices:
-                x, y, z = obj.vertices[vertex].to_tuple()
-                x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
-                yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
-                x, z = rotate_point(x, z, yaw)
-                y, z = rotate_point(y, z, pitch)
-                x, y = rotate_point(x, y, roll)
+                for vertex in face.vertices:
+                    x = obj.vertices[vertex].x - obj.origin.x
+                    y = obj.vertices[vertex].y - obj.origin.y
+                    z = obj.vertices[vertex].z - obj.origin.z
+                    x, z = rotate_point(x, z, math.radians(obj.orientation.x))
+                    y, z = rotate_point(y, z, math.radians(obj.orientation.y))
+                    x, y = rotate_point(x, y, math.radians(obj.orientation.z))
+                    x += obj.origin.x + obj.position.x
+                    y += obj.origin.y + obj.position.y
+                    z += obj.origin.z + obj.position.z
+                    x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
+                    yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
+                    x, z = rotate_point(x, z, yaw)
+                    y, z = rotate_point(y, z, pitch)
+                    x, y = rotate_point(x, y, roll)
 
-                if (z < 0) | (z > 100): # Do not render clipping or out-of-scope objects
-                    show = False
-                    break # There is no need to render the rest of the points if it is outside of render distance
+                    if (z < 0) | (z > 100): # Do not render clipping or out-of-scope objects
+                        show = False
+                        break # There is no need to render the rest of the points if it is outside of render distance
 
-                points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight))) # vector2 coords
-                depthval += z # add z to the sum of the z values
+                    points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight))) # vector2 coords
+                    depthval += z # add z to the sum of the z values
 
-            depthval /= len(face.vertices) # depthval now stores the z of the object's center
+                depthval /= len(face.vertices) # depthval now stores the z of the object's center
 
-            if show == True:
-                zbuffer.append([screen, RGBColor.to_tuple(face.color), points, obj.wire_thickness, depthval]) # Store the info in zbuffer
+                if show == True:
+                    zbuffer.append([screen, RGBColor.to_tuple(face.color), points, obj.wire_thickness, depthval]) # Store the info in zbuffer
 
     zbuffer.sort(key=lambda x: x[4], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
@@ -201,18 +214,18 @@ def update():
     if pause == False:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
-        cube.set_color(RGBColor(math.sin(tick*200), math.sin(tick*150), math.sin(tick*100)))
+        cube.position.y = 10*math.sin(tick/100)
+        wedge.orientation.x = tick
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
+        tick += 1
         if cam.position.y > 0: # Apply Gravity
             cam.velocity.y -= 0.02
         else:
             cam.velocity.y = 0
             cam.position.y = 0
-    tick += 1
-    objects = []
-    objects.append(cube)
-    return time.perf_counter_ns()-t0
+    objects = [cube, wedge]
+    return time.perf_counter_ns() - t0
 
 # Prints data and debug information to view while running
 def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, fps):
@@ -255,20 +268,28 @@ pygame.mouse.set_visible(False)
 cam = Camera()
 
 objects = []
-cube = Object((), 0, True, [], []) #position, wire thickness, visible
-cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertice positions of the faces
+cube = Object(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0), 0, True, [], []) #position, orientation, origin, wire thickness, visible
+cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
+cube.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 200, 0)), #faces
+    Face((0, 4, 5), RGBColor(200, 0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0)),
+    Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
+    Face((5, 4, 7), RGBColor(0, 200, 0)), Face((7, 6, 5), RGBColor(0, 200, 0)),
+    Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
+    Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
-cube.faces = [Face((0, 1, 2), RGBColor(0, 0, 0)), Face((2, 3, 0), RGBColor(0, 0, 0)), #faces
-    Face((0, 4, 5), RGBColor(0, 0, 0)), Face((5, 1, 0), RGBColor(0, 0, 0)),
-    Face((0, 4, 3), RGBColor(0, 0, 0)), Face((4, 7, 3), RGBColor(0, 0, 0)),
-    Face((5, 4, 7), RGBColor(0, 0, 0)), Face((7, 6, 5), RGBColor(0, 0, 0)),
-    Face((7, 6, 3), RGBColor(0, 0, 0)), Face((6, 2, 3), RGBColor(0, 0, 0)),
-    Face((5, 1, 2), RGBColor(0, 0, 0)), Face((2, 6, 5), RGBColor(0, 0, 0))]
+wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), 0, True, [], [])
+wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
+    Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
+    Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
+wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((1, 3, 4), RGBColor(0, 200, 0)),
+    Face((0, 5, 4), RGBColor(200, 0, 0)), Face((0, 1, 4), RGBColor(200, 0, 0)),
+    Face((0, 1, 3), RGBColor(0, 0, 200)), Face((0, 2, 3), RGBColor(0, 0, 200)),
+    Face((3, 2, 5), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
 
-bgcolor = (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255))
+bgcolor = RGBColor(255, 255, 255)
 cam.position.z = -10
 # Timing/frame_cap variables
 frame = 0
@@ -298,7 +319,7 @@ while running:
             if gevent.type == pygame.QUIT:
                 running = False
         # Background color
-        screen.fill(bgcolor)
+        screen.fill(bgcolor.to_tuple())
         
         # Print elapsed time ever n frames
         if frame % 60 == 0:
