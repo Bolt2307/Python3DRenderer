@@ -9,8 +9,8 @@ import random
 class Vector3:
     x,y,z = 0,0,0
 
-    def __init__(self,xVal,yVal,zVal):
-        self.x,self.y,self.z = xVal,yVal,zVal
+    def __init__(self,x,y,z):
+        self.x,self.y,self.z = x,y,z
 
     def to_tuple(self):
         return (self.x,self.y,self.z)
@@ -28,22 +28,20 @@ class Camera:
     focal_length = 400
 
 class RGBColor:
-    r = 0
-    g = 0
-    b = 0
-    def __init__(self,red,green,blue):
-        self.r,self.g,self.b = red,green,blue
+    r, g, b = 0, 0, 0
+    def __init__(self, red, green, blue):
+        self.r, self.g, self.b = red, green, blue
 
     def to_tuple(self):
-        return (self.r,self.g,self.b)
+        return(self.r, self.g, self.b)
 
 class Face:
-    col = RGBColor(0,0,0)
-    connected_vertices = (0,0,0)
+    color = RGBColor(0, 0, 0)
+    vertices = (0,0,0)
 
-    def __init__(self,vertices,color):
-        self.col = color
-        self.connected_vertices = vertices
+    def __init__(self, vertices, color):
+        self.vertices = vertices
+        self.color = color
 
 class Object:
     position = Vector3(0,0,0)
@@ -51,17 +49,23 @@ class Object:
     wire_thickness = 0
     wire_color = RGBColor(0,0,0)
 
-    renderable = True
     visible = True
 
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
 
-    def set_color(self,col): # Set the entire object to a color
-        for face in self.faces:
-            face.col = col
+    def __init__ (self, position, wire_thickness, visible, vertices, faces):
+        self.position = position
+        self.wire_thickness = wire_thickness
+        self.visible = visible
+        self.vertices = vertices
+        self.faces = faces
 
-def rotate_point(x, y, r):
+    def set_color (self, color): # Set the entire object to a color
+        for face in self.faces:
+            face.color = color
+
+def rotate_point (x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
 
 def render ():
@@ -74,8 +78,8 @@ def render ():
             points = []
             depthval = 0
 
-            for vertex in face.connected_vertices:
-                x,y,z = obj.vertices[vertex].to_tuple()
+            for vertex in face.vertices:
+                x, y, z = obj.vertices[vertex].to_tuple()
                 x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
                 yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
                 x, z = rotate_point(x, z, yaw)
@@ -89,10 +93,10 @@ def render ():
                 points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight))) # vector2 coords
                 depthval += z # add z to the sum of the z values
 
-            depthval /= len(face.connected_vertices) # depthval now stores the z of the object's center
+            depthval /= len(face.vertices) # depthval now stores the z of the object's center
 
             if show == True:
-                zbuffer.append([screen, RGBColor.to_tuple(face.col), points, obj.wire_thickness, depthval]) # Store the info in zbuffer
+                zbuffer.append([screen, RGBColor.to_tuple(face.color), points, obj.wire_thickness, depthval]) # Store the info in zbuffer
 
     zbuffer.sort(key=lambda x: x[4], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
@@ -103,6 +107,8 @@ def render ():
 def gui ():
     t0 = time.perf_counter_ns()
     global crosshairspread
+    global specstog
+    global pause
     crosshairspread = speed * 100
     
     #crosshairs
@@ -110,6 +116,11 @@ def gui ():
     pygame.draw.line(screen, 'red', (screen.get_width()/2+crosshairspread, screen.get_height()/2), (screen.get_width()/2+10+crosshairspread, screen.get_height()/2)) #horizontal right
     pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2-10-crosshairspread), (screen.get_width()/2, screen.get_height()/2-crosshairspread)) #vertical top
     pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2+crosshairspread), (screen.get_width()/2, screen.get_height()/2+10+crosshairspread)) #vertical vertical bottom
+    if pause == True:
+        pausetext = analytics_font.render('PAUSED', False, (200, 0, 0))
+        screen.blit(pausetext, (screen.get_width()/2, 0))
+    if specstog == True:
+            print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, measured_fps)
     return time.perf_counter_ns()-t0
 
 def handle_control ():
@@ -184,10 +195,13 @@ def handle_control ():
     return time.perf_counter_ns() - t0
 
 def update():
+    global objects
+    global tick
     t0 = time.perf_counter_ns()
     if pause == False:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
+        cube.set_color(RGBColor(math.sin(tick*200), math.sin(tick*150), math.sin(tick*100)))
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
         if cam.position.y > 0: # Apply Gravity
@@ -195,6 +209,9 @@ def update():
         else:
             cam.velocity.y = 0
             cam.position.y = 0
+    tick += 1
+    objects = []
+    objects.append(cube)
     return time.perf_counter_ns()-t0
 
 # Prints data and debug information to view while running
@@ -216,7 +233,7 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
 
 # Main section
 
-specstog = True
+specstog = False
 pause = False
 pausecooldown = 0
 crosshairspread = 0
@@ -238,36 +255,24 @@ pygame.mouse.set_visible(False)
 cam = Camera()
 
 objects = []
-cube = Object()
-cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), Vector3( 1,  1, -1), Vector3(-1,  1, -1), #cube
-            Vector3(-1, -1,  1), Vector3( 1, -1,  1), Vector3( 1,  1,  1), Vector3(-1,  1,  1),
-            Vector3(2, -1, -1), Vector3(4, -1, -1), Vector3(2, -1, 1), Vector3(4, -1, 1), Vector3(4, 1, -1), Vector3(2, 1, -1)] #wedge 1st=8
-cube.faces = []
+cube = Object((), 0, True, [], []) #position, wire thickness, visible
+cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertice positions of the faces
+    Vector3( 1,  1, -1), Vector3(-1,  1, -1),
+    Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
+    Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
 
-# I'll make functions for creating a pre-fab later
-f = [
-    (0, 1, 2), (2, 3, 0), #Cube
-    (0, 4, 5), (5, 1, 0),
-    (0, 4, 3), (4, 7, 3),
-    (5, 4, 7), (7, 6, 5),
-    (7, 6, 3), (6, 2, 3),
-    (5, 1, 2), (2, 6, 5),
-    (8, 10, 13), (9, 11, 12), #Wedge
-    (8, 9, 11), (8, 10, 11),
-    (8, 9, 12), (8, 13, 12),
-    (13, 10, 12), (12, 11, 10)]
-
-for v in f:
-    cube.faces.append(Face(v,RGBColor(random.randrange(0,255),random.randrange(0,255),random.randrange(0,255))))
-
-
-objects.append(cube)
+cube.faces = [Face((0, 1, 2), RGBColor(0, 0, 0)), Face((2, 3, 0), RGBColor(0, 0, 0)), #faces
+    Face((0, 4, 5), RGBColor(0, 0, 0)), Face((5, 1, 0), RGBColor(0, 0, 0)),
+    Face((0, 4, 3), RGBColor(0, 0, 0)), Face((4, 7, 3), RGBColor(0, 0, 0)),
+    Face((5, 4, 7), RGBColor(0, 0, 0)), Face((7, 6, 5), RGBColor(0, 0, 0)),
+    Face((7, 6, 3), RGBColor(0, 0, 0)), Face((6, 2, 3), RGBColor(0, 0, 0)),
+    Face((5, 1, 2), RGBColor(0, 0, 0)), Face((2, 6, 5), RGBColor(0, 0, 0))]
 
 bgcolor = (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255))
 cam.position.z = -10
 # Timing/frame_cap variables
 frame = 0
-frame_cap = 120
+frame_cap = 1000
 
 # Measurement variables
 cntrl_time = 0 # Nanoseconds
@@ -277,6 +282,7 @@ render_time_2D = 0 # Nanoseconds
 time_elapsed = 0 # Seconds
 measured_fps = 0
 idle_time = 0 # Seconds
+tick = 0 #ticks up 1 after every update
 
 last_timestamp = time.perf_counter() # Seconds
 
@@ -311,8 +317,7 @@ while running:
             # Update measurement variables
             measured_fps = 1/time_elapsed
             idle_time = time_elapsed
-            if specstog == True:
-                print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, time_elapsed, measured_fps)
+
         else:
             # Take user input
             handle_control()
@@ -325,8 +330,6 @@ while running:
 
             # Render GUI
             gui()
-            if specstog == True:
-                print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, measured_fps)
 
         pygame.display.flip() # Invert screen
         pygame.display.update() # Display new render
