@@ -1,7 +1,6 @@
 import pygame
 import math
 import time
-import random
 
 # Class definitions
 
@@ -47,6 +46,7 @@ class Object:
     position = Vector3(0,0,0)
     orientation = Vector3(0, 0, 0)
     origin = Vector3(0, 0, 0)
+    scale = Vector3(0, 0, 0)
 
     wire_thickness = 0
     wire_color = RGBColor(0,0,0)
@@ -56,10 +56,11 @@ class Object:
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
 
-    def __init__ (self, position, orientation, origin, wire_thickness, visible, vertices, faces):
+    def __init__ (self, position, orientation, origin, scale, wire_thickness, visible, vertices, faces):
         self.position = position
         self.orientation = orientation
         self.origin = origin
+        self.scale = scale
         self.wire_thickness = wire_thickness
         self.visible = visible
         self.vertices = vertices
@@ -84,9 +85,9 @@ def render ():
                 depthval = 0
 
                 for vertex in face.vertices:
-                    x = obj.vertices[vertex].x - obj.origin.x
-                    y = obj.vertices[vertex].y - obj.origin.y
-                    z = obj.vertices[vertex].z - obj.origin.z
+                    x = obj.vertices[vertex].x * obj.scale.x - obj.origin.x
+                    y = obj.vertices[vertex].y * obj.scale.y - obj.origin.y
+                    z = obj.vertices[vertex].z * obj.scale.z - obj.origin.z
                     x, z = rotate_point(x, z, math.radians(obj.orientation.x))
                     y, z = rotate_point(y, z, math.radians(obj.orientation.y))
                     x, y = rotate_point(x, y, math.radians(obj.orientation.z))
@@ -214,8 +215,10 @@ def update():
     if pause == False:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
-        cube.position.y = 10*math.sin(tick/100)
-        wedge.orientation.x = tick
+        cube.position = Vector3(5*math.sin(tick/100), 5*math.sin(tick/75), 5*math.sin(tick/50)+10) #position demonstration
+        wedge.orientation = Vector3(tick, tick/1.5, tick/2) #orientation demonstration
+        cube2.scale = Vector3(math.sin(tick/100)+1, math.sin(tick/75)+1, math.sin(tick/50)+1) #scaling demonstration
+        #cube2.scale = (math.sin(tick/200), math.sin(tick/150), math.sin(tick/100))
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
         tick += 1
@@ -224,7 +227,7 @@ def update():
         else:
             cam.velocity.y = 0
             cam.position.y = 0
-    objects = [cube, wedge]
+    objects = [cube, wedge, cube2]
     return time.perf_counter_ns() - t0
 
 # Prints data and debug information to view while running
@@ -268,7 +271,7 @@ pygame.mouse.set_visible(False)
 cam = Camera()
 
 objects = []
-cube = Object(Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0), 0, True, [], []) #position, orientation, origin, wire thickness, visible
+cube = Object(Vector3(0, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], []) #position, orientation, origin, wire thickness, visible
 cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
@@ -280,7 +283,7 @@ cube.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 
     Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
     Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
-wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), 0, True, [], [])
+wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], [])
 wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
@@ -289,8 +292,19 @@ wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((1, 3, 4), RGBColor(0,
     Face((0, 1, 3), RGBColor(0, 0, 200)), Face((0, 2, 3), RGBColor(0, 0, 200)),
     Face((3, 2, 5), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
 
-bgcolor = RGBColor(255, 255, 255)
-cam.position.z = -10
+cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], []) #position, orientation, origin, wire thickness, visible
+cube2.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
+    Vector3( 1,  1, -1), Vector3(-1,  1, -1),
+    Vector3(-1, -1,  1), Vector3( 1, -1,  1),
+    Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
+cube2.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 200, 0)), #faces
+    Face((0, 4, 5), RGBColor(200, 0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0)),
+    Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
+    Face((5, 4, 7), RGBColor(0, 200, 0)), Face((7, 6, 5), RGBColor(0, 200, 0)),
+    Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
+    Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
+
+bgcolor = RGBColor(255, 255, 255) #background color
 # Timing/frame_cap variables
 frame = 0
 frame_cap = 1000
