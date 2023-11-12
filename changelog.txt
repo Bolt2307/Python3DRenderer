@@ -66,3 +66,8 @@ Bolt2307 : 10/11/2023
 + Added the wedge back and made it spin
 + Added tick variable that increments after every update
 + Made the cube go up and down with a sine function
+
+Bolt2307 : 11/11/2023
++ Added scale vector3 factor to objects
++ Added a demonstration for the factor
++ Updated existing demonstrations to better match the new one
