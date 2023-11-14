@@ -47,12 +47,11 @@ class RGBColor:
 class Face:
     color = RGBColor(0, 0, 0)
     vertices = (0,0,0)
-    dir = Vector2(0, 0)
+    dir 
 
-    def __init__(self, vertices, color, dir):
+    def __init__(self, vertices, color):
         self.vertices = vertices
         self.color = color
-        self.dir = dir
 
 class Object:
     position = Vector3(0,0,0)
@@ -116,7 +115,7 @@ def render ():
                     break
                 
                 planepts.append((x, y, z))
-                points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight))) # vector2 coords
+                points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
                 depthval += z # add z to the sum of the z values
 
             depthval /= len(face.vertices) # depthval now stores the z of the object's center
@@ -286,33 +285,33 @@ cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of 
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-cube.faces = [Face((0, 1, 2), RGBColor(0, 200, 0), Vector2(180, 0)), Face((2, 3, 0), RGBColor(0, 200, 0), Vector2(180, 0)), #faces
-    Face((0, 4, 5), RGBColor(200, 0, 0), Vector2(90, 0)), Face((5, 1, 0), RGBColor(200, 0, 0), Vector2(90, 0)),
-    Face((0, 4, 3), RGBColor(0, 0, 200), Vector2(0, 90)), Face((4, 7, 3), RGBColor(0, 0, 200), Vector2(0, 90)),
-    Face((5, 4, 7), RGBColor(0, 200, 0), Vector2(0, 0)), Face((7, 6, 5), RGBColor(0, 200, 0), Vector2(0, 0)),
-    Face((7, 6, 3), RGBColor(200, 0, 0), Vector2(0, -90)), Face((6, 2, 3), RGBColor(200, 0, 0), Vector2(0, -90)),
-    Face((5, 1, 2), RGBColor(0, 0, 200), Vector2(-90, 0)), Face((2, 6, 5), RGBColor(0, 0, 200), Vector2(-90, 0))]
+cube.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 200, 0)), #faces
+    Face((0, 4, 5), RGBColor(200, 0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0)),
+    Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
+    Face((5, 4, 7), RGBColor(0, 200, 0)), Face((7, 6, 5), RGBColor(0, 200, 0)),
+    Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
+    Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
 wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, False, [], [])
 wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0), Vector2(0, 0)), Face((1, 3, 4), RGBColor(0, 200, 0), Vector2(0, 0)),
-    Face((0, 5, 4), RGBColor(200, 0, 0), Vector2(0, 0)), Face((0, 1, 4), RGBColor(200, 0, 0), Vector2(0, 0)),
-    Face((0, 1, 3), RGBColor(0, 0, 200), Vector2(0, 0)), Face((0, 2, 3), RGBColor(0, 0, 200), Vector2(0, 0)),
-    Face((3, 2, 5), RGBColor(0, 200, 200), Vector2(0, 0)), Face((3, 4, 5), RGBColor(0, 200, 200), Vector2(0, 0))]
+wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((1, 3, 4), RGBColor(0, 200, 0)),
+    Face((0, 5, 4), RGBColor(200, 0, 0)), Face((0, 1, 4), RGBColor(200, 0, 0)),
+    Face((0, 1, 3), RGBColor(0, 0, 200)), Face((0, 2, 3), RGBColor(0, 0, 200)),
+    Face((3, 2, 5), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
 
 cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, False, [], []) #position, orientation, origin, wire thickness, visible
 cube2.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-cube2.faces = [Face((0, 1, 2), RGBColor(0, 200, 0), Vector2(0, 0)), Face((2, 3, 0), RGBColor(0, 200, 0), Vector2(0, 0)), #faces
-    Face((0, 4, 5), RGBColor(200, 0, 0), Vector2(0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0), Vector2(0, 0)),
-    Face((0, 4, 3), RGBColor(0, 0, 200), Vector2(0, 0)), Face((4, 7, 3), RGBColor(0, 0, 200), Vector2(0, 0)),
-    Face((5, 4, 7), RGBColor(0, 200, 0), Vector2(0, 0)), Face((7, 6, 5), RGBColor(0, 200, 0), Vector2(0, 0)),
-    Face((7, 6, 3), RGBColor(200, 0, 0), Vector2(0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0), Vector2(0, 0)),
-    Face((5, 1, 2), RGBColor(0, 0, 200), Vector2(0, 0)), Face((2, 6, 5), RGBColor(0, 0, 200), Vector2(0, 0))]
+cube2.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 200, 0)), #faces
+    Face((0, 4, 5), RGBColor(200, 0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0)),
+    Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
+    Face((5, 4, 7), RGBColor(0, 200, 0)), Face((7, 6, 5), RGBColor(0, 200, 0)),
+    Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
+    Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
 bgcolor = RGBColor(255, 255, 255) #background color
 # Timing/frame_cap variables
