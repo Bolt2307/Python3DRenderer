@@ -71,3 +71,8 @@ Bolt2307 : 11/11/2023
 + Added scale vector3 factor to objects
 + Added a demonstration for the factor
 + Updated existing demonstrations to better match the new one
+
+Lrae1207 : 15/11/2023
++ Added face pre-compilation optimization
+    + Pre-calculates array of points rather than compiling each vertex just-in-time
+    + Performance increase of 26%; Faster run-time but most likely a slight memory use increase
