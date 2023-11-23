@@ -3,14 +3,21 @@ import math
 import time
 import json
 
+# !IMPORTANT!
+scene_path = "scene.json"
+# Change this path ^ to the current path of the "scene.json" file on your system
+
 # Class definitions
 
 # Triple tuple representing 3d oordinates, 3d rotation, 3d movement, etc.
 class Vector3:
     x, y, z = 0, 0, 0
 
-    def __init__(self, x, y, z):
-        self.x, self.y, self.z = x, y, z
+    def __init__(self, x, y=0, z=0):
+        if type(x) is int:
+            self.x, self.y, self.z = x, y, z
+        elif type(x) is tuple:
+            self.x, self.y, self.z = x[0], x[1], x[2]
 
     def to_tuple(self):
         return (self.x, self.y, self.z)
@@ -19,8 +26,11 @@ class Vector3:
 class Vector2:
     x, y = 0, 0
 
-    def __init__(self, x, y):
-        self.x, self.y = x, y
+    def __init__(self, x, y=0):
+        if type(x) is int:
+            self.x, self.y = x, y
+        elif type(x) is tuple:
+            self.x, self.y = x[0], x[1]
 
     def to_tuple(self):
         return (self.x, self.y)
@@ -39,8 +49,12 @@ class Camera:
 
 class RGBColor:
     r, g, b = 0, 0, 0
-    def __init__(self, red, green, blue):
-        self.r, self.g, self.b = red, green, blue
+
+    def __init__(self, r, g=0, b=0):
+        if type(r) is int:
+            self.r, self.g, self.b = r, g, b
+        elif type(r) is tuple:
+            self.r, self.g, self.b = r[0], r[1], r[2]
 
     def to_tuple(self):
         return(self.r, self.g, self.b)
@@ -123,19 +137,19 @@ def render ():
             for vertex in face.points:
                 obj = face.obj
                 # Scaling
-                x = vertex.x * obj.scale.x - obj.origin.x
-                y = vertex.y * obj.scale.y - obj.origin.y
-                z = vertex.z * obj.scale.z - obj.origin.z
+                x = vertex.x * obj.scale.x
+                y = vertex.y * obj.scale.y
+                z = vertex.z * obj.scale.z
 
                 # Rotation
-                x, z = rotate_point(x, z, math.radians(obj.orientation.x))
-                y, z = rotate_point(y, z, math.radians(obj.orientation.y))
-                x, y = rotate_point(x, y, math.radians(obj.orientation.z))
+                x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.x))
+                x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.y))
+                y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.z))
 
                 # Offset
-                x += obj.origin.x + obj.position.x
-                y += obj.origin.y + obj.position.y
-                z += obj.origin.z + obj.position.z
+                x += obj.position.x
+                y += obj.position.y
+                z += obj.position.z
 
                 # Rotation relative to camera
                 x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
@@ -258,9 +272,6 @@ def update():
     if pause == False:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
-        cube.position = Vector3(5*math.sin(tick/100)-10, 5*math.sin(tick/75), 5*math.sin(tick/50)+10) #position demonstration
-        wedge.orientation = Vector3(tick, tick/1.5, tick/2) #orientation demonstration
-        cube2.scale = Vector3(math.sin(tick/100)+2, math.sin(tick/75)+2, math.sin(tick/50)+2) #scaling demonstration
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
         tick += 1
@@ -269,7 +280,6 @@ def update():
         else:
             cam.velocity.y = 0
             cam.position.y = 0
-    objects = [cube, wedge, cube2]
     return time.perf_counter_ns() - t0
 
 # Prints data and debug information to view while running
@@ -312,47 +322,27 @@ pygame.mouse.set_visible(False)
 # Instantiate classes
 cam = Camera()
 
+# Initiate Object List
 objects = []
-cube = Object(Vector3(0, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, False, [], []) #position, orientation, origin, wire thickness, visible, transparent
-cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
-    Vector3( 1,  1, -1), Vector3(-1,  1, -1),
-    Vector3(-1, -1,  1), Vector3( 1, -1,  1),
-    Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-cube.faces = [Face((2, 1, 0), RGBColor(0, 200, 0)), Face((0, 3, 2), RGBColor(0, 200, 0)), #faces
-    Face((5, 4, 0), RGBColor(200, 0, 0)), Face((0, 1, 5), RGBColor(200, 0, 0)),
-    Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
-    Face((7, 4, 5), RGBColor(0, 200, 0)), Face((5, 6, 7), RGBColor(0, 200, 0)),
-    Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
-    Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
-wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, False, [], [])
-wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
-    Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
-    Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((4, 3, 1), RGBColor(0, 200, 0)),
-    Face((0, 5, 4), RGBColor(200, 0, 0)), Face((4, 1, 0), RGBColor(200, 0, 0)),
-    Face((0, 1, 3), RGBColor(0, 0, 200)), Face((3, 2, 0), RGBColor(0, 0, 200)),
-    Face((5, 2, 3), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
-
-cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 5, True, True, [], [])
-cube2.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
-    Vector3( 1,  1, -1), Vector3(-1,  1, -1),
-    Vector3(-1, -1,  1), Vector3( 1, -1,  1),
-    Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-cube2.faces = [Face((2, 1, 0), RGBColor(0, 200, 0)), Face((0, 3, 2), RGBColor(0, 200, 0)), #faces
-    Face((5, 4, 0), RGBColor(200, 0, 0)), Face((0, 1, 5), RGBColor(200, 0, 0)),
-    Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
-    Face((7, 4, 5), RGBColor(0, 200, 0)), Face((5, 6, 7), RGBColor(0, 200, 0)),
-    Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
-    Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
-objects.append(cube)
-objects.append(wedge)
-objects.append(cube2)
-
-bgcolor = RGBColor(255, 255, 255) #background color
 # Timing/frame_cap variables
 frame = 0
 frame_cap = 1000
+
+# Load scene JSON as objects
+with open(scene_path) as file:
+    scene = json.load(file)
+    bgcolor = tuple(scene["bg_color"])
+    for obj in scene["objects"]:
+        obj = scene["objects"][obj]
+        vertices = []
+        for vertex in obj["vertices"]:
+            vertices.append(Vector3(tuple(vertex)))
+        faces = []
+        for face in obj["faces"]:
+            faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
+        objects.append(Object(Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
+file.close()
 
 # Precompiled faces
 precompiled_faces = []
@@ -362,7 +352,7 @@ for obj in objects:
         points = []
         for index in face.indices:
             points.append(obj.vertices[index])
-        precompiled_faces.append(FaceData(face.color,points,obj.wire_thickness,obj))
+        precompiled_faces.append(FaceData(face.color, points, obj.wire_thickness, obj))
 
 # Measurement variables
 cntrl_time = 0 # Nanoseconds
@@ -387,7 +377,7 @@ while running:
         for gevent in pygame.event.get():
             pass
         # Background color
-        screen.fill(bgcolor.to_tuple())
+        screen.fill(bgcolor)
         
         # Print elapsed time ever n frames
         if frame % 60 == 0:
