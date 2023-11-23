@@ -1,3 +1,2 @@
-- Face subdivision
-- Might do bitmap instead
+- re-implement Lrae's optimizations
 - Objects being stored in separate files
