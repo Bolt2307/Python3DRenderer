@@ -1,6 +1,7 @@
 import pygame
 import math
 import time
+import json
 
 # Class definitions
 
@@ -64,16 +65,18 @@ class Object:
     wire_color = RGBColor(0,0,0)
 
     visible = True
+    transparent = True
 
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
 
-    def __init__ (self, position, orientation, origin, scale, wire_thickness, transparent, vertices, faces):
+    def __init__ (self, position, orientation, origin, scale, wire_thickness, visible, transparent, vertices, faces):
         self.position = position
         self.orientation = orientation
         self.origin = origin
         self.scale = scale
         self.wire_thickness = wire_thickness
+        self.visible = visible
         self.transparent = transparent
         self.vertices = vertices
         self.faces = faces
@@ -149,7 +152,7 @@ def render ():
                 depthval += z # add z to the sum of the z values
 
             depthval /= len(face.points) # depthval now stores the z of the object's center
-            if show & (shoelace(points) > 0):
+            if show & ((shoelace(points) > 0) | obj.transparent):
                 zbuffer.append([face.color.to_tuple(), points, face.wire_thickness, depthval]) # Store the info in zbuffer
     zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
@@ -310,7 +313,7 @@ pygame.mouse.set_visible(False)
 cam = Camera()
 
 objects = []
-cube = Object(Vector3(0, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], []) #position, orientation, origin, wire thickness, visible
+cube = Object(Vector3(0, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, False, [], []) #position, orientation, origin, wire thickness, visible, transparent
 cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
@@ -322,7 +325,7 @@ cube.faces = [Face((2, 1, 0), RGBColor(0, 200, 0)), Face((0, 3, 2), RGBColor(0, 
     Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
     Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
-wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], [])
+wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, False, [], [])
 wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
@@ -331,7 +334,7 @@ wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((4, 3, 1), RGBColor(0,
     Face((0, 1, 3), RGBColor(0, 0, 200)), Face((3, 2, 0), RGBColor(0, 0, 200)),
     Face((5, 2, 3), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
 
-cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], []) #position, orientation, origin, wire thickness, visible
+cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 5, True, True, [], [])
 cube2.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
