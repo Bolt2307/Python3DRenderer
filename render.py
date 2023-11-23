@@ -4,7 +4,7 @@ import time
 import json
 
 # !IMPORTANT!
-scene_path = "scene.json"
+scene_path = "/home/user/VSCodeProjects/3DPythonRenderer/scenepath.json"
 # Change this path ^ to the current path of the "scene.json" file on your system
 
 # Class definitions
@@ -333,8 +333,10 @@ frame_cap = 1000
 with open(scene_path) as file:
     scene = json.load(file)
     bgcolor = tuple(scene["bg_color"])
-    for obj in scene["objects"]:
-        obj = scene["objects"][obj]
+file.close()
+for objpath in scene["object_file_paths"]:
+    with open(scene["folder_path"] + objpath) as file:
+        obj = json.load(file)
         vertices = []
         for vertex in obj["vertices"]:
             vertices.append(Vector3(tuple(vertex)))
@@ -342,7 +344,7 @@ with open(scene_path) as file:
         for face in obj["faces"]:
             faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
         objects.append(Object(Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
-file.close()
+    file.close()
 
 # Precompiled faces
 precompiled_faces = []
