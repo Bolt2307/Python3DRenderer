@@ -1,3 +1,6 @@
+!IMPORTANT!
+Change scene_path to the path of the "scene.json" file on your system
+
 Use W, A, S, and D to move the camera.
 Mouse can be moved to rotate the camera.
 Pause with Escape.
