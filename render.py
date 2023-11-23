@@ -97,6 +97,17 @@ class FaceData:
         self.wire_thickness = wire_thickness
         self.obj = obj
 
+def shoelace (pts):
+    try:
+        area = 0
+        point = 0
+        for point in range(len(pts) - 1):
+            area += pts[point][0] * pts[point + 1][1] - pts[point][1] * pts[point + 1][0]
+        area += pts[len(pts) - 1][0] * pts[0][1] - pts[len(pts) - 1][1] * pts[0][0]
+        return area
+    except:
+        return 0
+
 def render ():
     t0 = time.perf_counter_ns()
     zbuffer = []
@@ -137,7 +148,7 @@ def render ():
             depthval += z # add z to the sum of the z values
 
         depthval /= len(face.points) # depthval now stores the z of the object's center
-        if show == True:
+        if show & (shoelace(points) > 0):
             zbuffer.append([face.color.to_tuple(), points, face.wire_thickness, depthval]) # Store the info in zbuffer
     zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
@@ -241,7 +252,7 @@ def update():
     global tick
     t0 = time.perf_counter_ns()
     if pause == False:
-        #pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
+        pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
         cube.position = Vector3(5*math.sin(tick/100)-10, 5*math.sin(tick/75), 5*math.sin(tick/50)+10) #position demonstration
         wedge.orientation = Vector3(tick, tick/1.5, tick/2) #orientation demonstration
@@ -303,10 +314,10 @@ cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of 
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-cube.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 200, 0)), #faces
-    Face((0, 4, 5), RGBColor(200, 0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0)),
+cube.faces = [Face((2, 1, 0), RGBColor(0, 200, 0)), Face((0, 3, 2), RGBColor(0, 200, 0)), #faces
+    Face((5, 4, 0), RGBColor(200, 0, 0)), Face((0, 1, 5), RGBColor(200, 0, 0)),
     Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
-    Face((5, 4, 7), RGBColor(0, 200, 0)), Face((7, 6, 5), RGBColor(0, 200, 0)),
+    Face((7, 4, 5), RGBColor(0, 200, 0)), Face((5, 6, 7), RGBColor(0, 200, 0)),
     Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
     Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
@@ -314,20 +325,20 @@ wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 
 wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((1, 3, 4), RGBColor(0, 200, 0)),
-    Face((0, 5, 4), RGBColor(200, 0, 0)), Face((0, 1, 4), RGBColor(200, 0, 0)),
-    Face((0, 1, 3), RGBColor(0, 0, 200)), Face((0, 2, 3), RGBColor(0, 0, 200)),
-    Face((3, 2, 5), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
+wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((4, 3, 1), RGBColor(0, 200, 0)),
+    Face((0, 5, 4), RGBColor(200, 0, 0)), Face((4, 1, 0), RGBColor(200, 0, 0)),
+    Face((0, 1, 3), RGBColor(0, 0, 200)), Face((3, 2, 0), RGBColor(0, 0, 200)),
+    Face((5, 2, 3), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
 
 cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, False, [], []) #position, orientation, origin, wire thickness, visible
 cube2.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
-cube2.faces = [Face((0, 1, 2), RGBColor(0, 200, 0)), Face((2, 3, 0), RGBColor(0, 200, 0)), #faces
-    Face((0, 4, 5), RGBColor(200, 0, 0)), Face((5, 1, 0), RGBColor(200, 0, 0)),
+cube2.faces = [Face((2, 1, 0), RGBColor(0, 200, 0)), Face((0, 3, 2), RGBColor(0, 200, 0)), #faces
+    Face((5, 4, 0), RGBColor(200, 0, 0)), Face((0, 1, 5), RGBColor(200, 0, 0)),
     Face((0, 4, 3), RGBColor(0, 0, 200)), Face((4, 7, 3), RGBColor(0, 0, 200)),
-    Face((5, 4, 7), RGBColor(0, 200, 0)), Face((7, 6, 5), RGBColor(0, 200, 0)),
+    Face((7, 4, 5), RGBColor(0, 200, 0)), Face((5, 6, 7), RGBColor(0, 200, 0)),
     Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
     Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 objects.append(cube)
