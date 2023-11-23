@@ -63,7 +63,7 @@ class Object:
     wire_thickness = 0
     wire_color = RGBColor(0,0,0)
 
-    transparent = False
+    visible = True
 
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
@@ -113,43 +113,44 @@ def render ():
     zbuffer = []
 
     for face in precompiled_faces:
-        show = True # The object will be rendered unless one of its vertices is out-of-scope
-        points = []
-        depthval = 0
-        for vertex in face.points:
-            obj = face.obj
-            # Scaling
-            x = vertex.x * obj.scale.x - obj.origin.x
-            y = vertex.y * obj.scale.y - obj.origin.y
-            z = vertex.z * obj.scale.z - obj.origin.z
+        if face.obj.visible == True:
+            show = True # The object will be rendered unless one of its vertices is out-of-scope
+            points = []
+            depthval = 0
+            for vertex in face.points:
+                obj = face.obj
+                # Scaling
+                x = vertex.x * obj.scale.x - obj.origin.x
+                y = vertex.y * obj.scale.y - obj.origin.y
+                z = vertex.z * obj.scale.z - obj.origin.z
 
-            # Rotation
-            x, z = rotate_point(x, z, math.radians(obj.orientation.x))
-            y, z = rotate_point(y, z, math.radians(obj.orientation.y))
-            x, y = rotate_point(x, y, math.radians(obj.orientation.z))
+                # Rotation
+                x, z = rotate_point(x, z, math.radians(obj.orientation.x))
+                y, z = rotate_point(y, z, math.radians(obj.orientation.y))
+                x, y = rotate_point(x, y, math.radians(obj.orientation.z))
 
-            # Offset
-            x += obj.origin.x + obj.position.x
-            y += obj.origin.y + obj.position.y
-            z += obj.origin.z + obj.position.z
+                # Offset
+                x += obj.origin.x + obj.position.x
+                y += obj.origin.y + obj.position.y
+                z += obj.origin.z + obj.position.z
 
-            # Rotation relative to camera
-            x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
-            yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
-            x, z = rotate_point(x, z, yaw)
-            y, z = rotate_point(y, z, pitch)
-            x, y = rotate_point(x, y, roll)
+                # Rotation relative to camera
+                x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
+                yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
+                x, z = rotate_point(x, z, yaw)
+                y, z = rotate_point(y, z, pitch)
+                x, y = rotate_point(x, y, roll)
 
-            if z < 0: # Do not render clipping or out-of-scope objects
-                show = False
-                break
-                
-            points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
-            depthval += z # add z to the sum of the z values
+                if z < 0: # Do not render clipping or out-of-scope objects
+                    show = False
+                    break
+                    
+                points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
+                depthval += z # add z to the sum of the z values
 
-        depthval /= len(face.points) # depthval now stores the z of the object's center
-        if show & (shoelace(points) > 0):
-            zbuffer.append([face.color.to_tuple(), points, face.wire_thickness, depthval]) # Store the info in zbuffer
+            depthval /= len(face.points) # depthval now stores the z of the object's center
+            if show & (shoelace(points) > 0):
+                zbuffer.append([face.color.to_tuple(), points, face.wire_thickness, depthval]) # Store the info in zbuffer
     zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
         pygame.draw.polygon(screen, face[0], face[1], face[2])
@@ -309,7 +310,7 @@ pygame.mouse.set_visible(False)
 cam = Camera()
 
 objects = []
-cube = Object(Vector3(0, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, False, [], []) #position, orientation, origin, wire thickness, visible
+cube = Object(Vector3(0, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], []) #position, orientation, origin, wire thickness, visible
 cube.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
@@ -321,7 +322,7 @@ cube.faces = [Face((2, 1, 0), RGBColor(0, 200, 0)), Face((0, 3, 2), RGBColor(0, 
     Face((7, 6, 3), RGBColor(200, 0, 0)), Face((6, 2, 3), RGBColor(200, 0, 0)),
     Face((5, 1, 2), RGBColor(0, 0, 200)), Face((2, 6, 5), RGBColor(0, 0, 200))]
 
-wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, False, [], [])
+wedge = Object(Vector3(4, 0, 4), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], [])
 wedge.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1), 
     Vector3( 1,  1,  1), Vector3(-1,  1,  1)]
@@ -330,7 +331,7 @@ wedge.faces = [Face((0, 2, 5), RGBColor(0, 200, 0)), Face((4, 3, 1), RGBColor(0,
     Face((0, 1, 3), RGBColor(0, 0, 200)), Face((3, 2, 0), RGBColor(0, 0, 200)),
     Face((5, 2, 3), RGBColor(0, 200, 200)), Face((3, 4, 5), RGBColor(0, 200, 200))]
 
-cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, False, [], []) #position, orientation, origin, wire thickness, visible
+cube2 = Object(Vector3(10, 0, 10), Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(1, 1, 1), 0, True, [], []) #position, orientation, origin, wire thickness, visible
 cube2.vertices = [Vector3(-1, -1, -1), Vector3( 1, -1, -1), #vertex positions of the faces
     Vector3( 1,  1, -1), Vector3(-1,  1, -1),
     Vector3(-1, -1,  1), Vector3( 1, -1,  1),
