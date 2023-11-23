@@ -1,0 +1,5 @@
+{
+    "bg_color": [255, 255, 255],
+    "folder_path": "/home/user/VSCodeProjects/3DPythonRenderer/scene",
+    "object_file_paths": ["/cube.json", "/wedge.json", "/cube_wire.json"]
+}

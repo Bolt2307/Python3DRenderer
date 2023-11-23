@@ -1,5 +1,6 @@
 !IMPORTANT!
-Change scene_path to the path of the "scene.json" file on your system
+Change scene_path to the path of the "scene_path.json" file on your system
+and change the "folder_path" attribute of the scene_path.json file to the correct path of the "scene" folder on your system
 
 Use W, A, S, and D to move the camera.
 Mouse can be moved to rotate the camera.
