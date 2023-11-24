@@ -4,7 +4,7 @@ import time
 import json
 
 # !IMPORTANT!
-scene_path = "/scenepath.json"
+scene_path = "/home/user/VSCodeProjects/3DPythonRenderer/scenepath.json"
 # Change this path ^ to the current path of the "scene.json" file on your system
 
 # Class definitions
@@ -70,6 +70,7 @@ class Face:
 class Object:
     isStatic = True
 
+    id = ""
     position = Vector3(0,0,0)
     orientation = Vector3(0, 0, 0)
     origin = Vector3(0, 0, 0)
@@ -84,7 +85,8 @@ class Object:
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
 
-    def __init__ (self, position, orientation, origin, scale, wire_thickness, visible, transparent, vertices, faces):
+    def __init__ (self, id, position, orientation, origin, scale, wire_thickness, visible, transparent, vertices, faces):
+        self.id = id
         self.position = position
         self.orientation = orientation
         self.origin = origin
@@ -99,20 +101,15 @@ class Object:
         for face in self.faces:
             face.color = color
 
+def get_obj (id, list = None):
+    if list == None:
+        list = objects
+    for obj in list:
+        if obj.id == id:
+            return obj
+
 def rotate_point (x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
-
-class FaceData:
-    color = RGBColor(0,0,0)
-    points = []
-    wire_thickness = 0
-    obj = None
-
-    def __init__(self,color,points,wire_thickness,obj):
-        self.color = color
-        self.points = points
-        self.wire_thickness = wire_thickness
-        self.obj = obj
 
 def shoelace (pts):
     try:
@@ -266,7 +263,6 @@ def handle_control ():
     return time.perf_counter_ns() - t0
 
 def update():
-    global objects
     global tick
     t0 = time.perf_counter_ns()
     if pause == False:
@@ -291,6 +287,7 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
     total_text = analytics_font.render('active_time: ' + str(round((render_time_2D + cntrl_time + engine_update_time + render_time_3D) / 1000000,2)) + ' ms', False, (0, 0, 0))
     idle_text = analytics_font.render('idle_time: ' + str(round(idle_time * 1000,2)) + ' ms', False, (0, 0, 0))
     fps_text = analytics_font.render('fps: ' + str(round(fps)), False, (0, 0, 0))
+    tick_text = analytics_font.render('tick: ' + str(tick), False, (0, 0, 0))
     screen.blit(cntrl_text, (5,0))
     screen.blit(engine_update_text, (5,20))
     screen.blit(render_3D_text, (5,40))
@@ -298,6 +295,7 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
     screen.blit(total_text, (5,80))
     screen.blit(idle_text, (5,100))
     screen.blit(fps_text, (5,120))
+    screen.blit(tick_text, (5, 140))
 
 # Main section
 
@@ -343,7 +341,7 @@ for objpath in scene["object_file_paths"]:
         faces = []
         for face in obj["faces"]:
             faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
-        objects.append(Object(Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
+        objects.append(Object(obj["id"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
     file.close()
 
 # Precompiled faces
