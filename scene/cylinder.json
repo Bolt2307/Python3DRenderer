@@ -1,5 +1,5 @@
 {
-    "id": "cylinder",
+    "name" : "cylinder",
     "position": [0, 10, 10],
     "orientation": [0, 0, 90],
     "origin": [0, 0, 0],
