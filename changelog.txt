@@ -80,3 +80,7 @@ Lrae1207 : 15/11/2023
 Bolt2307 : 22/11/2023
     + Backface culling using the shoelace method
     + Added JSON file reading
+
+Lrae1207 : 25/11/2023
+    + Changed JSON pathing to relative
+    + Fixed toggling to be smoother(You must release the key to toggle pause and specs again)
