@@ -1,5 +1,5 @@
-#Python3DRenderer
-##!IMPORTANT!
+# Python3DRenderer
+## !IMPORTANT!
 Change scene_path to the path of the "scene_path.json" file on your system
 and change the "folder_path" attribute of the scene_path.json file to the correct path of the "scene" folder on your system
 
