@@ -4,7 +4,7 @@ import time
 import json
 
 # !IMPORTANT!
-scene_path = "/home/user/VSCodeProjects/3DPythonRenderer/scenepath.json"
+scene_path = "scenepath.json"
 # Change this path ^ to the current path of the "scene.json" file on your system
 
 # Class definitions
@@ -14,7 +14,7 @@ class Vector3:
     x, y, z = 0, 0, 0
 
     def __init__(self, x, y=0, z=0):
-        if type(x) is int:
+        if (type(x) is int) | (type(x) is float):
             self.x, self.y, self.z = x, y, z
         elif type(x) is tuple:
             self.x, self.y, self.z = x[0], x[1], x[2]
@@ -27,7 +27,7 @@ class Vector2:
     x, y = 0, 0
 
     def __init__(self, x, y=0):
-        if type(x) is int:
+        if (type(x) is int) | (type(x) is float):
             self.x, self.y = x, y
         elif type(x) is tuple:
             self.x, self.y = x[0], x[1]
@@ -101,12 +101,20 @@ class Object:
         for face in self.faces:
             face.color = color
 
-def get_obj (id, list = None):
+def find_obj (id, list = None):
     if list == None:
         list = objects
     for obj in list:
         if obj.id == id:
-            return obj
+            return list.index(obj)
+
+def copy_obj (id, new_id, list = None, new_list = None):
+    if list == None:
+        list = objects
+    if new_list == None:
+        new_list = list
+    obj = list[find_obj(id)]
+    new_list.append(Object(new_id, obj.position, obj.orientation, obj.origin, obj.scale, obj.wire_thickness, obj.visible, obj.transparent, obj.vertices, obj.faces))
 
 def rotate_point (x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
@@ -139,9 +147,9 @@ def render ():
                     z = vertex.z * obj.scale.z
 
                     # Rotation
-                    x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.x))
-                    x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.y))
-                    y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.z))
+                    x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.y))
+                    y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.x))
+                    x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.z))
 
                     # Offset
                     x += obj.position.x
@@ -150,7 +158,7 @@ def render ():
 
                     # Rotation relative to camera
                     x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
-                    yaw, pitch, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
+                    pitch, yaw, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
                     x, z = rotate_point(x, z, yaw)
                     y, z = rotate_point(y, z, pitch)
                     x, y = rotate_point(x, y, roll)
@@ -197,13 +205,15 @@ def handle_control ():
     global pause
     global speed
     global running
+    global place
+    placecooldown = 0
     keys = pygame.key.get_pressed()
 
     #rotation
     rel = pygame.mouse.get_rel()
     if pause == False:
-        cam.rotation.x += rel[0]*0.15
-        cam.rotation.y -= rel[1]*0.15 #mouse sense
+        cam.rotation.y += rel[0]*0.15
+        cam.rotation.x -= rel[1]*0.15 #mouse sense
 
         #movement
         if keys[pygame.K_LSHIFT]: #sprinting
@@ -217,17 +227,17 @@ def handle_control ():
             if cam.focal_length < 400:
                 cam.focal_length += 10
         if keys[pygame.K_w]:
-            cam.velocity.z += speed*math.cos(math.radians(cam.rotation.x))
-            cam.velocity.x += speed*math.sin(math.radians(cam.rotation.x))
+            cam.velocity.z += speed*math.cos(math.radians(cam.rotation.y))
+            cam.velocity.x += speed*math.sin(math.radians(cam.rotation.y))
         if keys[pygame.K_s]:
-            cam.velocity.z -= speed*math.cos(math.radians(cam.rotation.x))
-            cam.velocity.x -= speed*math.sin(math.radians(cam.rotation.x))
+            cam.velocity.z -= speed*math.cos(math.radians(cam.rotation.y))
+            cam.velocity.x -= speed*math.sin(math.radians(cam.rotation.y))
         if keys[pygame.K_a]:
-            cam.velocity.z -= speed*math.cos(math.radians(cam.rotation.x+90))
-            cam.velocity.x -= speed*math.sin(math.radians(cam.rotation.x+90))
+            cam.velocity.z -= speed*math.cos(math.radians(cam.rotation.y+90))
+            cam.velocity.x -= speed*math.sin(math.radians(cam.rotation.y+90))
         if keys[pygame.K_d]:
-            cam.velocity.z += speed*math.cos(math.radians(cam.rotation.x+90))
-            cam.velocity.x += speed*math.sin(math.radians(cam.rotation.x+90))
+            cam.velocity.z += speed*math.cos(math.radians(cam.rotation.y+90))
+            cam.velocity.x += speed*math.sin(math.radians(cam.rotation.y+90))
         if keys[pygame.K_SPACE]:
             if cam.position.y <= 0:
                 cam.velocity.y += 1
@@ -237,6 +247,14 @@ def handle_control ():
         else:
             if cam.height < 0:
                 cam.height += 0.2
+        if placecooldown <= 0:
+            if keys[pygame.K_q] & (place == False):
+                place = True
+                placecooldown = 0.1
+            else:
+                place = False
+        else:
+            placecooldown -= 0.01
 
     #misc
     else:
@@ -264,9 +282,22 @@ def handle_control ():
 
 def update():
     global tick
+    global cubenum
     t0 = time.perf_counter_ns()
     if pause == False:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
+
+        if place:
+            x, y, z, = 0, 0, 2
+            y, z = rotate_point(y, z, -math.radians(cam.rotation.x))
+            x, z = rotate_point(x, z, -math.radians(cam.rotation.y))
+            x, y = rotate_point(x, y, -math.radians(cam.rotation.z))
+            x, y, z = round((x + cam.position.x) / 0.5) * 0.5, round((y + cam.position.y) / 0.5) * 0.5, round((z + cam.position.z) / 0.5) * 0.5
+            copy_obj("cube", "cube" + str(cubenum))
+            objects[find_obj("cube" + str(cubenum))].position = Vector3(x, y, z)
+            objects[find_obj("cube" + str(cubenum))].visible = True
+            cubenum += 1
+
 	    # Change position by velocity and apply drag to velocity
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
@@ -299,6 +330,8 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
 
 # Main section
 
+cubenum = 0
+place = False
 specstog = False
 pause = False
 pausecooldown = 0
@@ -320,7 +353,7 @@ pygame.mouse.set_visible(False)
 # Instantiate classes
 cam = Camera()
 
-# Initiate Object List
+# Initiate Object Lists
 objects = []
 
 # Timing/frame_cap variables
@@ -344,7 +377,7 @@ for objpath in scene["object_file_paths"]:
         objects.append(Object(obj["id"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
     file.close()
 
-# Precompiled faces
+# Precompiling faces
 for obj in objects:
     for face in obj.faces:
         face.indices = list(face.indices)
