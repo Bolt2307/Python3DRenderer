@@ -4,7 +4,7 @@ import time
 import json
 
 # !IMPORTANT!
-scene_path = "/home/user/VSCodeProjects/3DPythonRenderer/scenepath.json"
+scene_path = "scene_path.json"
 # Change this path ^ to the current path of the "scene.json" file on your system
 
 # Class definitions
@@ -191,25 +191,29 @@ def gui ():
     pygame.draw.line(screen, 'red', (screen.get_width()/2+crosshairspread, screen.get_height()/2), (screen.get_width()/2+10+crosshairspread, screen.get_height()/2)) #horizontal right
     pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2-10-crosshairspread), (screen.get_width()/2, screen.get_height()/2-crosshairspread)) #vertical top
     pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2+crosshairspread), (screen.get_width()/2, screen.get_height()/2+10+crosshairspread)) #vertical vertical bottom
-    if pause == True:
+
+    if pause == True: # Show pause menu
         pausetext = analytics_font.render('PAUSED', False, (200, 0, 0))
         screen.blit(pausetext, (screen.get_width()/2, 0))
-    if specstog == True:
+    
+    if specstog == True: # Show spects
             print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, measured_fps)
     return time.perf_counter_ns()-t0
 
-def handle_control ():
+def handle_control():
     t0 = time.perf_counter_ns()
-    global pausecooldown
     global specstog
+    global specsHeld
     global pause
+    global pauseHeld
     global speed
-    global running
+    global running 
     keys = pygame.key.get_pressed()
 
     #rotation
     rel = pygame.mouse.get_rel()
-    if pause == False:
+
+    if pause == False: # When unpaused
         cam.rotation.y += rel[0]*0.15
         cam.rotation.x -= rel[1]*0.15 #mouse sense
 
@@ -245,29 +249,31 @@ def handle_control ():
         else:
             if cam.height < 0:
                 cam.height += 0.2
-
-    #misc
-    else:
+    else: # In pause menu
         if keys[pygame.K_e]: #exits the game if e is pressed in pause
             running = False
-        if keys[pygame.K_f]:
-            if specstog == True:
-                specstog = False
-            elif specstog == False:
-                specstog = True
-    if pausecooldown < 0: #pauses the game on escape
-        if keys[pygame.K_ESCAPE]:
-            pausecooldown = 0.2
-            if pause == False:
-                pause = True
-                pygame.mouse.set_visible(True)
-                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            elif pause == True:
-                pause = False
-                pygame.mouse.set_visible(False)
-                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
+
+        if keys[pygame.K_F1]:
+            if specsHeld == False:
+                specstog = not specstog
+                specsHeld = True
+        else:
+            specsHeld = False
+
+    if keys[pygame.K_ESCAPE]:
+        if pause == False and pauseHeld == False: # Pause handling
+            pauseHeld = True
+            pause = True
+            pygame.mouse.set_visible(True)
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        elif pause == True and pauseHeld == False:
+            pauseHeld = True
+            pause = False
+            pygame.mouse.set_visible(False)
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
     else:
-        pausecooldown -= 0.02 #makes sure that pause key is not held and spammed
+        pauseHeld = False
+
     return time.perf_counter_ns() - t0
 
 def update():
@@ -308,8 +314,9 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
 # Main section
 
 specstog = False
+specsHeld = False
 pause = False
-pausecooldown = 0
+pauseHeld = False
 crosshairspread = 0
 speed = 0.025
 
@@ -349,7 +356,7 @@ for objpath in scene["object_file_paths"]:
         faces = []
         for face in obj["faces"]:
             faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
-        objects.append(Object(obj["id"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
+        objects.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
     file.close()
 
 # Precompiling faces
