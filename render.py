@@ -4,7 +4,7 @@ import time
 import json
 
 # !IMPORTANT!
-scene_path = "scenepath.json"
+scene_path = "/home/user/VSCodeProjects/3DPythonRenderer/scenepath.json"
 # Change this path ^ to the current path of the "scene.json" file on your system
 
 # Class definitions
@@ -205,8 +205,6 @@ def handle_control ():
     global pause
     global speed
     global running
-    global place
-    placecooldown = 0
     keys = pygame.key.get_pressed()
 
     #rotation
@@ -247,14 +245,6 @@ def handle_control ():
         else:
             if cam.height < 0:
                 cam.height += 0.2
-        if placecooldown <= 0:
-            if keys[pygame.K_q] & (place == False):
-                place = True
-                placecooldown = 0.1
-            else:
-                place = False
-        else:
-            placecooldown -= 0.01
 
     #misc
     else:
@@ -282,22 +272,9 @@ def handle_control ():
 
 def update():
     global tick
-    global cubenum
     t0 = time.perf_counter_ns()
     if pause == False:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
-
-        if place:
-            x, y, z, = 0, 0, 2
-            y, z = rotate_point(y, z, -math.radians(cam.rotation.x))
-            x, z = rotate_point(x, z, -math.radians(cam.rotation.y))
-            x, y = rotate_point(x, y, -math.radians(cam.rotation.z))
-            x, y, z = round((x + cam.position.x) / 0.5) * 0.5, round((y + cam.position.y) / 0.5) * 0.5, round((z + cam.position.z) / 0.5) * 0.5
-            copy_obj("cube", "cube" + str(cubenum))
-            objects[find_obj("cube" + str(cubenum))].position = Vector3(x, y, z)
-            objects[find_obj("cube" + str(cubenum))].visible = True
-            cubenum += 1
-
 	    # Change position by velocity and apply drag to velocity
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
@@ -330,8 +307,6 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
 
 # Main section
 
-cubenum = 0
-place = False
 specstog = False
 pause = False
 pausecooldown = 0
