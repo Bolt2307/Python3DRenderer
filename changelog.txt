@@ -84,3 +84,4 @@ Bolt2307 : 22/11/2023
 Lrae1207 : 25/11/2023
     + Changed JSON pathing to relative
     + Fixed toggling to be smoother(You must release the key to toggle pause and specs again)
+    + F1 is now specs toggle button
