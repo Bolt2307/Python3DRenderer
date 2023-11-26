@@ -2,10 +2,7 @@ import pygame
 import math
 import time
 import json
-
-# !IMPORTANT!
-scene_path = "scene_path.json"
-# Change this path ^ to the current path of the "scene.json" file on your system
+import os
 
 # Class definitions
 
@@ -100,6 +97,12 @@ class Object:
     def set_color (self, color): # Set the entire object to a color
         for face in self.faces:
             face.color = color
+
+def rel_dir (str):
+    if (str[0] == "/") | (str[0] == "."):
+        return str
+    else:
+        return os.path.dirname(__file__) + "/" + str
 
 def find_obj (id, list = None):
     if list == None:
@@ -313,6 +316,7 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
 
 # Main section
 
+scene_path = rel_dir("scenepath.json")
 specstog = False
 specsHeld = False
 pause = False
@@ -346,9 +350,10 @@ frame_cap = 1000
 with open(scene_path) as file:
     scene = json.load(file)
     bgcolor = tuple(scene["bg_color"])
+    folder_path = rel_dir(scene["folder_path"])
 file.close()
 for objpath in scene["object_file_paths"]:
-    with open(scene["folder_path"] + objpath) as file:
+    with open(folder_path + objpath) as file:
         obj = json.load(file)
         vertices = []
         for vertex in obj["vertices"]:
