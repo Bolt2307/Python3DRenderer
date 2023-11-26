@@ -88,3 +88,4 @@ Lrae1207 : 25/11/2023
 
 Bolt2307 : 25/11/2023
     + Added Relative Pathing Support for Linux Python
+    + Added Static Object Point Locking (Precalculate point location with orientation, position, etc.)
