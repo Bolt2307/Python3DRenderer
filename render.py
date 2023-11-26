@@ -140,34 +140,34 @@ def render ():
     zbuffer = []
 
     for obj in objects:
+        locked = obj.locked
         for face in obj.faces:
-            if obj.visible == True:
+            if obj.visible:
                 show = True # The object will be rendered unless one of its vertices is out-of-scope
                 points = []
                 depthval = 0
                 for vertex in face.indices:
-                    if not obj.locked:
+                    x, y, z = vertex.x, vertex.y, vertex.z
+                    if not locked:
                         # Scaling
-                        x = vertex.x * obj.scale.x
-                        y = vertex.y * obj.scale.y
-                        z = vertex.z * obj.scale.z
+                        x *= obj.scale.x
+                        y *= obj.scale.y
+                        z *= obj.scale.z
 
                         # Rotation
                         x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.y))
                         y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.x))
                         x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.z))
+                        
+                        # Offset
+                        x += obj.position.x
+                        y += obj.position.y
+                        z += obj.position.z
 
                         # Lock Vertices For Static Objects
                         if obj.static:
-                            vertex = Vector3(x, y, z)
+                            face.indices[face.indices.index(vertex)] = Vector3(x, y, z)
                             obj.locked = True
-                    else:
-                        x, y, z = vertex.x, vertex.y, vertex.z
-
-                    # Offset
-                    x += obj.position.x
-                    y += obj.position.y
-                    z += obj.position.z
 
                     # Rotation relative to camera
                     x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
@@ -180,7 +180,10 @@ def render ():
                         show = False
                         break
 
-                    points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
+                    try:
+                        points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
+                    except:
+                        pass
                     depthval += z # add z to the sum of the z values
 
                 depthval /= len(face.indices) # depthval now stores the z of the object's center
@@ -205,11 +208,11 @@ def gui ():
     pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2-10-crosshairspread), (screen.get_width()/2, screen.get_height()/2-crosshairspread)) #vertical top
     pygame.draw.line(screen, 'red', (screen.get_width()/2, screen.get_height()/2+crosshairspread), (screen.get_width()/2, screen.get_height()/2+10+crosshairspread)) #vertical vertical bottom
 
-    if pause == True: # Show pause menu
+    if pause: # Show pause menu
         pausetext = analytics_font.render('PAUSED', False, (200, 0, 0))
         screen.blit(pausetext, (screen.get_width()/2, 0))
     
-    if specstog == True: # Show spects
+    if specstog: # Show spects
             print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_time_2D, idle_time, measured_fps)
     return time.perf_counter_ns()-t0
 
@@ -226,7 +229,7 @@ def handle_control():
     #rotation
     rel = pygame.mouse.get_rel()
 
-    if pause == False: # When unpaused
+    if not pause: # When unpaused
         cam.rotation.y += rel[0]*0.15
         cam.rotation.x -= rel[1]*0.15 #mouse sense
 
@@ -267,19 +270,19 @@ def handle_control():
             running = False
 
         if keys[pygame.K_F1]:
-            if specsHeld == False:
+            if not specsHeld:
                 specstog = not specstog
                 specsHeld = True
         else:
             specsHeld = False
 
     if keys[pygame.K_ESCAPE]:
-        if pause == False and pauseHeld == False: # Pause handling
+        if (not pause) & (not pauseHeld): # Pause handling
             pauseHeld = True
             pause = True
             pygame.mouse.set_visible(True)
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-        elif pause == True and pauseHeld == False:
+        elif pause & (not pauseHeld):
             pauseHeld = True
             pause = False
             pygame.mouse.set_visible(False)
@@ -292,11 +295,12 @@ def handle_control():
 def update():
     global tick
     t0 = time.perf_counter_ns()
-    if pause == False:
+    if not pause:
         pygame.mouse.set_pos(screen.get_width()/2, screen.get_height()/2) #mouse "lock"
 	    # Change position by velocity and apply drag to velocity
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
+        objects[find_obj("wedge")].position.z = 10*math.sin(math.radians(tick*2)) + 10
         tick += 1
         if cam.position.y > 0: # Apply Gravity
             cam.velocity.y -= 0.02
