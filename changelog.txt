@@ -85,3 +85,6 @@ Lrae1207 : 25/11/2023
     + Changed JSON pathing to relative
     + Fixed toggling to be smoother(You must release the key to toggle pause and specs again)
     + F1 is now specs toggle button
+
+Bolt2307 : 25/11/2023
+    + Added Relative Pathing Support for Linux Python
