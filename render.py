@@ -65,7 +65,8 @@ class Face:
         self.color = color
 
 class Object:
-    isStatic = True
+    static = True
+    locked = False
 
     id = ""
     position = Vector3(0,0,0)
@@ -82,7 +83,7 @@ class Object:
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
 
-    def __init__ (self, id, position, orientation, origin, scale, wire_thickness, visible, transparent, vertices, faces):
+    def __init__ (self, id, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces):
         self.id = id
         self.position = position
         self.orientation = orientation
@@ -91,6 +92,7 @@ class Object:
         self.wire_thickness = wire_thickness
         self.visible = visible
         self.transparent = transparent
+        self.static = static
         self.vertices = vertices
         self.faces = faces
 
@@ -144,15 +146,23 @@ def render ():
                 points = []
                 depthval = 0
                 for vertex in face.indices:
-                    # Scaling
-                    x = vertex.x * obj.scale.x
-                    y = vertex.y * obj.scale.y
-                    z = vertex.z * obj.scale.z
+                    if not obj.locked:
+                        # Scaling
+                        x = vertex.x * obj.scale.x
+                        y = vertex.y * obj.scale.y
+                        z = vertex.z * obj.scale.z
 
-                    # Rotation
-                    x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.y))
-                    y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.x))
-                    x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.z))
+                        # Rotation
+                        x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.y))
+                        y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.x))
+                        x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.z))
+
+                        # Lock Vertices For Static Objects
+                        if obj.static:
+                            vertex = Vector3(x, y, z)
+                            obj.locked = True
+                    else:
+                        x, y, z = vertex.x, vertex.y, vertex.z
 
                     # Offset
                     x += obj.position.x
@@ -169,7 +179,7 @@ def render ():
                     if z < 0: # Do not render clipping or out-of-scope objects
                         show = False
                         break
-                        
+
                     points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
                     depthval += z # add z to the sum of the z values
 
@@ -361,7 +371,7 @@ for objpath in scene["object_file_paths"]:
         faces = []
         for face in obj["faces"]:
             faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
-        objects.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], vertices, faces))
+        objects.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces))
     file.close()
 
 # Precompiling faces
