@@ -300,7 +300,6 @@ def update():
 	    # Change position by velocity and apply drag to velocity
         cam.position.x, cam.position.y, cam.position.z = cam.position.x + cam.velocity.x, cam.position.y + cam.velocity.y, cam.position.z + cam.velocity.z
         cam.velocity.x, cam.velocity.y, cam.velocity.z = cam.velocity.x * 0.85, cam.velocity.y * 0.85, cam.velocity.z * 0.85
-        objects[find_obj("wedge")].position.z = 10*math.sin(math.radians(tick*2)) + 10
         tick += 1
         if cam.position.y > 0: # Apply Gravity
             cam.velocity.y -= 0.02
