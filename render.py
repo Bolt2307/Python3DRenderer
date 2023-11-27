@@ -105,21 +105,27 @@ def rel_dir (str):
         return str
     else:
         return os.path.dirname(__file__) + "/" + str
-
-def find_obj (id, list = None):
-    if list == None:
-        list = objects
-    for obj in list:
-        if obj.id == id:
-            return list.index(obj)
+class find_obj:
+    def by_id (id, list = None):
+        if list == None:
+            list = objects
+        for obj in list:
+            if obj.id == id:
+                return list.index(obj)
+    def by_position (pos, list = None, skip = []):
+        if list == None:
+            list = objects
+        for obj in list:
+            if (obj.position.to_tuple() == pos.to_tuple()) & (obj.id not in skip):
+                return list.index(obj)
 
 def copy_obj (id, new_id, list = None, new_list = None):
     if list == None:
         list = objects
     if new_list == None:
         new_list = list
-    obj = list[find_obj(id)]
-    new_list.append(Object(new_id, obj.position, obj.orientation, obj.origin, obj.scale, obj.wire_thickness, obj.visible, obj.transparent, obj.vertices, obj.faces))
+    obj = list[find_obj.by_id(id)]
+    new_list.append(Object(new_id, obj.position, obj.orientation, obj.origin, obj.scale, obj.wire_thickness, obj.visible, obj.transparent, obj.static, obj.vertices, obj.faces))
 
 def rotate_point (x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
@@ -136,14 +142,17 @@ def shoelace (pts):
         return 0
 
 def render (window, list):
+    global objectsnum
+    global facesnum
     screen.fill(bgcolor)
     t0 = time.perf_counter_ns()
     zbuffer = []
 
     for obj in list:
-        locked = obj.locked
-        for face in obj.faces:
-            if obj.visible:
+        if obj.visible:
+            objectsnum += 1
+            locked = obj.locked
+            for face in obj.faces:
                 show = True # The object will be rendered unless one of its vertices is out-of-scope
                 points = []
                 depthval = 0
@@ -193,6 +202,7 @@ def render (window, list):
     zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
         pygame.draw.polygon(window, face[0], face[1], face[2])
+        facesnum += 1
 
     return time.perf_counter_ns() - t0
                 
@@ -224,7 +234,8 @@ def handle_control():
     global pause
     global pauseHeld
     global speed
-    global running 
+    global running
+    global cubenum
     keys = pygame.key.get_pressed()
 
     #rotation
@@ -270,7 +281,7 @@ def handle_control():
         if keys[pygame.K_e]: #exits the game if e is pressed in pause
             running = False
 
-        if keys[pygame.K_F1]:
+        if keys[pygame.K_f]:
             if not specsHeld:
                 specstog = not specstog
                 specsHeld = True
@@ -319,6 +330,8 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
     idle_text = analytics_font.render('idle_time: ' + str(round(idle_time * 1000,2)) + ' ms', False, (0, 0, 0))
     fps_text = analytics_font.render('fps: ' + str(round(fps)), False, (0, 0, 0))
     tick_text = analytics_font.render('tick: ' + str(tick), False, (0, 0, 0))
+    facesnum_text = analytics_font.render('faces being rendered: ' + str(facesnum), False, (0, 0, 0))
+    objectsnum_text = analytics_font.render('objects being rendered: ' + str(objectsnum), False, (0, 0, 0))
     screen.blit(cntrl_text, (5,0))
     screen.blit(engine_update_text, (5,20))
     screen.blit(render_3D_text, (5,40))
@@ -327,6 +340,8 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
     screen.blit(idle_text, (5,100))
     screen.blit(fps_text, (5,120))
     screen.blit(tick_text, (5, 140))
+    screen.blit(facesnum_text, (5,160))
+    screen.blit(objectsnum_text, (5, 180))
 
 # Main section
 
@@ -422,6 +437,8 @@ while running:
             engine_update_time = update()
             
             # Render objects
+            objectsnum = 0
+            facesnum = 0
             render_time_3D = render(screen, objects)
 
             # Render GUI
@@ -439,6 +456,8 @@ while running:
             update()
             
             # Render objects
+            objectsnum = 0
+            facesnum = 0
             render(screen, objects)
 
             # Render GUI
