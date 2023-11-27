@@ -6,7 +6,7 @@ import os
 
 # Class definitions
 
-# Triple tuple representing 3d oordinates, 3d rotation, 3d movement, etc.
+# Triple tuple representing 3d coordinates, 3d rotation, 3d movement, etc.
 class Vector3:
     x, y, z = 0, 0, 0
 
@@ -135,11 +135,12 @@ def shoelace (pts):
     except:
         return 0
 
-def render ():
+def render (window, list):
+    screen.fill(bgcolor)
     t0 = time.perf_counter_ns()
     zbuffer = []
 
-    for obj in objects:
+    for obj in list:
         locked = obj.locked
         for face in obj.faces:
             if obj.visible:
@@ -191,7 +192,7 @@ def render ():
                     zbuffer.append([face.color.to_tuple(), points, obj.wire_thickness, depthval]) # Store the info in zbuffer
     zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
     for face in zbuffer: # Draw each face
-        pygame.draw.polygon(screen, face[0], face[1], face[2])
+        pygame.draw.polygon(window, face[0], face[1], face[2])
 
     return time.perf_counter_ns() - t0
                 
@@ -329,7 +330,7 @@ def print_elapsed_time(cntrl_time, engine_update_time, render_time_3D, render_ti
 
 # Main section
 
-scene_path = rel_dir("scenepath.json")
+bgcolor = (255, 255, 255)
 specstog = False
 specsHeld = False
 pause = False
@@ -352,37 +353,40 @@ pygame.mouse.set_visible(False)
 # Instantiate classes
 cam = Camera()
 
-# Initiate Object Lists
-objects = []
-
 # Timing/frame_cap variables
 frame = 0
 frame_cap = 1000
 
 # Load scene JSON as objects
-with open(scene_path) as file:
-    scene = json.load(file)
-    bgcolor = tuple(scene["bg_color"])
-    folder_path = rel_dir(scene["folder_path"])
-file.close()
-for objpath in scene["object_file_paths"]:
-    with open(folder_path + objpath) as file:
-        obj = json.load(file)
-        vertices = []
-        for vertex in obj["vertices"]:
-            vertices.append(Vector3(tuple(vertex)))
-        faces = []
-        for face in obj["faces"]:
-            faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
-        objects.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces))
+def load_objects (path):
+    objlist = []
+    with open(path) as file:
+        scene = json.load(file)
+        bgcolor = tuple(scene["bg_color"])
+        folder_path = rel_dir(scene["folder_path"])
     file.close()
+    for objpath in scene["object_file_paths"]:
+        with open(folder_path + objpath) as file:
+            obj = json.load(file)
+            vertices = []
+            for vertex in obj["vertices"]:
+                vertices.append(Vector3(tuple(vertex)))
+            faces = []
+            for face in obj["faces"]:
+                faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
+            objlist.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces))
+        file.close()
+    return objlist
 
 # Precompiling faces
-for obj in objects:
-    for face in obj.faces:
-        face.indices = list(face.indices)
-        for index in range(len(face.indices)):
-            face.indices[index] = obj.vertices[face.indices[index]]
+def compile (objects):
+    objlist = objects
+    for obj in objlist:
+        for face in obj.faces:
+            face.indices = list(face.indices)
+            for index in range(len(face.indices)):
+                face.indices[index] = obj.vertices[face.indices[index]]
+    return objlist
 
 # Measurement variables
 cntrl_time = 0 # Nanoseconds
@@ -396,6 +400,8 @@ tick = 0 #ticks up 1 after every update
 
 last_timestamp = time.perf_counter() # Seconds
 
+objects = compile(load_objects(rel_dir("scenepath.json")))
+
 while running:
     current_timestamp = time.perf_counter()
     time_elapsed += current_timestamp - last_timestamp # Add change in time to the time_elapsed
@@ -406,8 +412,6 @@ while running:
         # Handle events
         for gevent in pygame.event.get():
             pass
-        # Background color
-        screen.fill(bgcolor)
         
         # Print elapsed time ever n frames
         if frame % 60 == 0:
@@ -418,7 +422,7 @@ while running:
             engine_update_time = update()
             
             # Render objects
-            render_time_3D = render()
+            render_time_3D = render(screen, objects)
 
             # Render GUI
             render_time_2D = gui()
@@ -435,7 +439,7 @@ while running:
             update()
             
             # Render objects
-            render()
+            render(screen, objects)
 
             # Render GUI
             gui()
