@@ -7,7 +7,7 @@
     "wire_thickness": 0,
     "visible": false,
     "transparent": false,
-    "static": false,
+    "static": true,
     "vertices": [[-1, -1, -1], [1, -1, -1],
         [1,  1, -1], [-1,  1, -1],
         [-1, -1, 1], [1, -1, 1],
