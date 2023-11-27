@@ -1,5 +1,5 @@
 {
-    "name" : "placeholder1",
+    "name": "wedge",
     "position": [-10, 0, 10],
     "orientation": [0, 0, 0],
     "origin": [0, 0, 0],
@@ -7,6 +7,7 @@
     "wire_thickness": 0,
     "visible": true,
     "transparent": false,
+    "static": true,
     "vertices": [[-1, -1, -1], [1, -1, -1],
         [-1, -1, 1], [1, -1, 1], 
         [1, 1, 1], [-1, 1, 1]],
