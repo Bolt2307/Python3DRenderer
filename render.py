@@ -415,7 +415,7 @@ tick = 0 #ticks up 1 after every update
 
 last_timestamp = time.perf_counter() # Seconds
 
-objects = compile(load_objects(rel_dir("scenepath.json")))
+objects = compile(load_objects(rel_dir("scene_path.json")))
 
 while running:
     current_timestamp = time.perf_counter()
