@@ -5,7 +5,7 @@
     "origin": [0, 0, 0],
     "scale": [1, 1, 1],
     "wire_thickness": 0,
-    "visible": false,
+    "visible": true,
     "transparent": false,
     "static": true,
     "vertices": [[-1, -1, -1], [1, -1, -1],
