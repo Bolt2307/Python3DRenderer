@@ -1,5 +1,5 @@
 {
-    "name" : "placeholder0",
+    "name": "wire_cube",
     "position": [10, 0, 10],
     "orientation": [0, 0, 0],
     "origin": [0, 0, 0],
@@ -7,6 +7,7 @@
     "wire_thickness": 5,
     "visible": true,
     "transparent": true,
+    "static": false,
     "vertices": [[-1, -1, -1], [1, -1, -1],
         [1,  1, -1], [-1,  1, -1],
         [-1, -1, 1], [1, -1, 1],
