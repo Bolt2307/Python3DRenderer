@@ -122,13 +122,15 @@ def shoelace (pts):
         return 0
 
 class Graphics:
+    active = True
+
     screen = Screen()
     objects = []
 
     bgcolor = (255, 255, 255)
     specstog = False
     specsHeld = False
-    pause = False
+    paused = False
     pauseHeld = False
     crosshairspread = 0
     speed = 0.025
@@ -136,18 +138,16 @@ class Graphics:
     analytics_font = None
     clock = None
     cam = Camera()
+    window = None
 
     frame = 0
     frame_cap = 1000
-
-    last_timestamp = time.perf_counter() # Seconds
-
 
     def __init__(self):
         self.bgcolor = (255, 255, 255)
         self.specstog = False
         self.specsHeld = False
-        self.pause = False
+        self.paused = False
         self.pauseHeld = False
         self.crosshairspread = 0
         self.speed = 0.025
@@ -155,9 +155,9 @@ class Graphics:
         pygame.init()
         pygame.font.init()
         self.analytics_font = pygame.font.SysFont('cousine', 20)
-        window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-        self.screen.fullwidth, self.screen.fullheight = window.get_width(), window.get_height() #finds fullscreen dimensions
-        window = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
+        self.window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.screen.fullwidth, self.screen.fullheight = self.window.get_width(), self.window.get_height() #finds fullscreen dimensions
+        self.window = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         pygame.display.set_caption('Python (Pygame) - 3D Renderer')
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
@@ -198,10 +198,7 @@ class Graphics:
     
     def render(self):
         list = self.objects
-        window = self.screen
-        self.objectsnum
-        self.facesnum
-        self.screen.fill(self.bgcolor)
+        self.window.fill(self.bgcolor)
         t0 = time.perf_counter_ns()
         zbuffer = []
 
@@ -210,7 +207,6 @@ class Graphics:
             screen = self.screen
 
             if obj.visible:
-                objectsnum += 1
                 locked = obj.locked
                 for face in obj.faces:
                     show = True # The object will be rendered unless one of its vertices is out-of-scope
@@ -250,10 +246,8 @@ class Graphics:
                             show = False
                             break
 
-                        try:
-                            points.append(((x * cam.focal_length/z+screen.get_width()/2) * (screen.get_width() / Screen.fullwidth), (-y * cam.focal_length/z+screen.get_height()/2)*(screen.get_height() / Screen.fullheight)))
-                        except:
-                            pass
+                        points.append(((x * cam.focal_length/z+self.window.get_width()/2) * (self.window.get_width() / self.screen.fullwidth), (-y * cam.focal_length/z+self.window.get_height()/2)*(self.window.get_height() / self.screen.fullheight)))
+                        
                         depthval += z # add z to the sum of the z values
 
                     depthval /= len(face.indices) # depthval now stores the z of the object's center
@@ -262,28 +256,24 @@ class Graphics:
 
         zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
 
-        for face in zbuffer: # Draw each face
-            pygame.draw.polygon(window, face[0], face[1], face[2])
-            facesnum += 1
+        for f in zbuffer: # Draw each face
+            pygame.draw.polygon(self.window, f[0], f[1], f[2])
 
         return time.perf_counter_ns() - t0
                 
     def gui(self):
         t0 = time.perf_counter_ns()
-        self.crosshairspread
-        self.specstog
-        self.pause
         crosshairspread = self.speed * 100
         
         #crosshairs
-        pygame.draw.line(self.screen, 'red', (self.screen.get_width()/2-10-crosshairspread, self.screen.get_height()/2), (self.screen.get_width()/2-crosshairspread, self.screen.get_height()/2)) #horizontal left
-        pygame.draw.line(self.screen, 'red', (self.screen.get_width()/2+crosshairspread, self.screen.get_height()/2), (self.screen.get_width()/2+10+crosshairspread, self.screen.get_height()/2)) #horizontal right
-        pygame.draw.line(self.screen, 'red', (self.screen.get_width()/2, self.screen.get_height()/2-10-crosshairspread), (self.screen.get_width()/2, self.screen.get_height()/2-crosshairspread)) #vertical top
-        pygame.draw.line(self.screen, 'red', (self.screen.get_width()/2, self.screen.get_height()/2+crosshairspread), (self.screen.get_width()/2, self.screen.get_height()/2+10+crosshairspread)) #vertical vertical bottom
+        pygame.draw.line(self.window, 'red', (self.window.get_width()/2-10-crosshairspread, self.window.get_height()/2), (self.window.get_width()/2-crosshairspread, self.window.get_height()/2)) #horizontal left
+        pygame.draw.line(self.window, 'red', (self.window.get_width()/2+crosshairspread, self.window.get_height()/2), (self.window.get_width()/2+10+crosshairspread, self.window.get_height()/2)) #horizontal right
+        pygame.draw.line(self.window, 'red', (self.window.get_width()/2, self.window.get_height()/2-10-crosshairspread), (self.window.get_width()/2, self.window.get_height()/2-crosshairspread)) #vertical top
+        pygame.draw.line(self.window, 'red', (self.window.get_width()/2, self.window.get_height()/2+crosshairspread), (self.window.get_width()/2, self.window.get_height()/2+10+crosshairspread)) #vertical vertical bottom
 
-        if self.pause: # Show pause menu
+        if self.paused: # Show pause menu
             pausetext = self.analytics_font.render('PAUSED', False, (200, 0, 0))
-            self.screen.blit(pausetext, (self.screen.get_width()/2, 0))
+            self.window.blit(pausetext, (self.window.get_width()/2, 0))
         
         if self.specstog: # Show spects
             print('placeholder')
@@ -296,11 +286,12 @@ class Graphics:
         #rotation
         rel = pygame.mouse.get_rel()
 
-        if not paused: # When unpaused
+        if not self.paused: # When unpaused
             cam = self.cam
             cam.rotation.y += rel[0]*0.15
             cam.rotation.x -= rel[1]*0.15 #mouse sense
-
+            
+            speed = self.speed
             #movement
             if keys[pygame.K_LSHIFT]: #sprinting
                 if speed < 0.1:
@@ -335,7 +326,7 @@ class Graphics:
                     cam.height += 0.2
         else: # In pause menu
             if keys[pygame.K_e]: #exits the game if e is pressed in pause
-                running = False
+                self.active = False
 
             if keys[pygame.K_f]:
                 if not specsHeld:
@@ -345,14 +336,14 @@ class Graphics:
                 specsHeld = False
 
         if keys[pygame.K_ESCAPE]:
-            if (not paused) & (not pauseHeld): # Pause handling
-                pauseHeld = True
-                paused = True
+            if (not self.paused) & (not self.pauseHeld): # Pause handling
+                self.pauseHeld = True
+                self.paused = True
                 pygame.mouse.set_visible(True)
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            elif self.paused & (not pauseHeld):
-                pauseHeld = True
-                paused = False
+            elif self.paused & (not self.pauseHeld):
+                self.pauseHeld = True
+                self.paused = False
                 pygame.mouse.set_visible(False)
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
         else:
@@ -361,14 +352,12 @@ class Graphics:
         return time.perf_counter_ns() - t0
 
     def update(self):
-        global tick
         t0 = time.perf_counter_ns()
         if not self.paused:
-            pygame.mouse.set_pos(self.screen.get_width()/2, self.screen.get_height()/2) #mouse "lock"
+            pygame.mouse.set_pos(self.window.get_width()/2, self.window.get_height()/2) #mouse "lock"
             # Change position by velocity and apply drag to velocity
             self.cam.position.x, self.cam.position.y, self.cam.position.z = self.cam.position.x + self.cam.velocity.x, self.cam.position.y + self.cam.velocity.y, self.cam.position.z + self.cam.velocity.z
             self.cam.velocity.x, self.cam.velocity.y, self.cam.velocity.z = self.cam.velocity.x * 0.85, self.cam.velocity.y * 0.85, self.cam.velocity.z * 0.85
-            tick += 1
             if self.cam.position.y > 0: # Apply Gravity
                 self.cam.velocity.y -= 0.02
             else:
@@ -382,9 +371,13 @@ class Graphics:
         self.screen.blit(text_holder, (5,self.log_position))
         self.log_position += 20
 
+# Eventually put this in the engine
 g = Graphics()
 
-while g.running:
+time_elapsed = 0
+last_timestamp = time.perf_counter()
+tick = 0
+while g.active:
     current_timestamp = time.perf_counter()
     time_elapsed += current_timestamp - last_timestamp # Add change in time to the time_elapsed
     last_timestamp = current_timestamp
@@ -402,10 +395,9 @@ while g.running:
 
             # Update
             g.update()
+            tick += 1
             
             # Render objects
-            g.objectsnum = 0
-            g.facesnum = 0
             render_time_3D = g.render()
 
             # Render GUI
@@ -418,9 +410,8 @@ while g.running:
             g.update()
             
             # Render objects
-            objectsnum = 0
-            facesnum = 0
             g.render()
+            tick += 1
 
             # Render GUI
             g.gui()
