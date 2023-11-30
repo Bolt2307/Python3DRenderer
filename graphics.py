@@ -162,7 +162,7 @@ class Graphics:
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
         pygame.mouse.set_visible(False)
 
-        self.objects = self.compile(self.load_objects(rel_dir("scene_path.json")))
+        self.objects = self.load_objects(rel_dir("scene_path.json"))
     
     # Load scene JSON as objects
     def load_objects (self,path):
@@ -184,16 +184,6 @@ class Graphics:
                 objlist.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces))
             file.close()
         return objlist
-
-    # Precompiling faces
-    def compile(self,objects):
-        objlist = objects
-        for obj in objlist:
-            for face in obj.faces:
-                face.indices = list(face.indices)
-                for index in range(len(face.indices)):
-                    face.indices[index] = obj.vertices[face.indices[index]]
-        return objlist
     
     def render(self):
         list = self.objects
@@ -207,44 +197,48 @@ class Graphics:
 
             if obj.visible:
                 locked = obj.locked
+                vertices = []
+                for vertex in obj.vertices:
+                    x, y, z = vertex.x, vertex.y, vertex.z
+                    if not locked:
+                        # Scaling
+                        x *= obj.scale.x
+                        y *= obj.scale.y
+                        z *= obj.scale.z
+
+                        # Rotation
+                        x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.y))
+                        y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.x))
+                        x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.z))
+                        
+                        # Offset
+                        x += obj.position.x
+                        y += obj.position.y
+                        z += obj.position.z
+
+                        # Lock Vertices For Static Objects
+                        if obj.static:
+                            obj.vertices[obj.vertices.index(vertex)] = Vector3(x, y, z)
+                            obj.locked = True
+
+                    # Rotation relative to camera
+                    x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
+                    pitch, yaw, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
+                    x, z = rotate_point(x, z, yaw)
+                    y, z = rotate_point(y, z, pitch)
+                    x, y = rotate_point(x, y, roll)
+
+                    vertices.append(Vector3(x, y, z))
                 for face in obj.faces:
-                    show = True # The object will be rendered unless one of its vertices is out-of-scope
+                    show = True
                     points = []
                     depthval = 0
-                    for vertex in face.indices:
-                        x, y, z = vertex.x, vertex.y, vertex.z
-                        if not locked:
-                            # Scaling
-                            x *= obj.scale.x
-                            y *= obj.scale.y
-                            z *= obj.scale.z
-
-                            # Rotation
-                            x, z = rotate_point(x - obj.origin.x, z - obj.origin.z, math.radians(obj.orientation.y))
-                            y, z = rotate_point(y - obj.origin.y, z - obj.origin.z, math.radians(obj.orientation.x))
-                            x, y = rotate_point(x - obj.origin.x, y - obj.origin.y, math.radians(obj.orientation.z))
-                            
-                            # Offset
-                            x += obj.position.x
-                            y += obj.position.y
-                            z += obj.position.z
-
-                            # Lock Vertices For Static Objects
-                            if obj.static:
-                                face.indices[face.indices.index(vertex)] = Vector3(x, y, z)
-                                obj.locked = True
-
-                        # Rotation relative to camera
-                        x, y, z = x - cam.position.x, y - cam.position.y - cam.height, z - cam.position.z
-                        pitch, yaw, roll = math.radians(cam.rotation.x), math.radians(cam.rotation.y), math.radians(cam.rotation.z)
-                        x, z = rotate_point(x, z, yaw)
-                        y, z = rotate_point(y, z, pitch)
-                        x, y = rotate_point(x, y, roll)
-
+                    for index in face.indices:
+                        x, y, z = vertices[index].x, vertices[index].y, vertices[index].z
+                        
                         if z < 0: # Do not render clipping or out-of-scope objects
                             show = False
                             break
-
                         points.append(((x * cam.focal_length/z+self.window.get_width()/2) * (self.window.get_width() / self.screen.fullwidth), (-y * cam.focal_length/z+self.window.get_height()/2)*(self.window.get_height() / self.screen.fullheight)))
                         
                         depthval += z # add z to the sum of the z values
@@ -275,7 +269,7 @@ class Graphics:
             self.window.blit(pausetext, (self.window.get_width()/2, 0))
         
         if self.specstog: # Show spects
-            print('placeholder')
+            pass
         return time.perf_counter_ns()-t0
 
     def handle_control(self):
