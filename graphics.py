@@ -1,4 +1,3 @@
-from typing import Self
 import pygame
 import math
 import time
@@ -329,11 +328,11 @@ class Graphics:
                 self.active = False
 
             if keys[pygame.K_f]:
-                if not specsHeld:
-                    specstog = not specstog
-                    specsHeld = True
+                if not self.specsHeld:
+                    self.specstog = not self.specstog
+                    self.specsHeld = True
             else:
-                specsHeld = False
+                self.specsHeld = False
 
         if keys[pygame.K_ESCAPE]:
             if (not self.paused) & (not self.pauseHeld): # Pause handling
