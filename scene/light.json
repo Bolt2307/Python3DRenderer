@@ -1,5 +1,6 @@
 {
     "name": "light",
+    "type": "light",
     "position": [5, 4, 3],
     "orientation": [-75, 35, 0],
     "origin": [0, 0, 0],
@@ -24,7 +25,6 @@
     "light": {
         "color": [0, 0, 255],
         "direction": [0, 35, 0],
-        "source": true,
         "spread": 200
     },
     "physics": {
