@@ -1,5 +1,6 @@
 {
-    "bg_color": [255, 255, 255],
+    "bg_color": [100, 100, 100],
     "folder_path": "scene",
-    "object_file_paths": ["/cube.json", "/wedge.json", "/cube_wire.json", "/cylinder.json"]
+    "object_file_paths": ["/cube.json", "/wedge.json", "/cube_wire.json", "/cylinder.json", "/cone.json", "/light.json", "/light2.json"],
+    "ambient": [100, 100, 100]
 }
