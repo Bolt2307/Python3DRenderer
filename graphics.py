@@ -3,6 +3,7 @@ import math
 import time
 import json
 import os
+import PIL
 
 # Class definitions
 
@@ -75,6 +76,7 @@ class Object:
     locked = False
 
     id = ""
+    type = ""
     position = Vector3(0,0,0)
     orientation = Vector3(0, 0, 0)
     origin = Vector3(0, 0, 0)
@@ -91,11 +93,11 @@ class Object:
 
     light_color = RGBColor(0, 0, 0)
     light_direction = Vector3(0, 0, 0)
-    light_source = False
     light_spread = 0
 
-    def __init__ (self, id, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces, light_color, light_direction, light_source, light_spread):
+    def __init__ (self, id, type, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces, light_color, light_direction, light_spread):
         self.id = id
+        self.type = type
         self.position = position
         self.orientation = orientation
         self.origin = origin
@@ -108,7 +110,6 @@ class Object:
         self.faces = faces
         self.light_color = light_color
         self.light_direction = light_direction
-        self.light_source = light_source
         self.light_spread = light_spread
 
     def set_color (self, color): # Set the entire object to a color
@@ -217,7 +218,7 @@ class Graphics:
                 faces = []
                 for face in obj["faces"]:
                     faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
-                objlist.append(Object(obj["name"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces, RGBColor(tuple(obj["light"]["color"])), Vector3(tuple(obj["light"]["direction"])), obj["light"]["source"], obj["light"]["spread"]))
+                objlist.append(Object(obj["name"], obj["type"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces, RGBColor(tuple(obj["light"]["color"])), Vector3(tuple(obj["light"]["direction"])), obj["light"]["spread"]))
             file.close()
         return objlist
     
@@ -252,10 +253,10 @@ class Graphics:
         for light in self.objects:
             for face in light.faces:
                 face.shading_color = (self.ambient_light.r/255, self.ambient_light.g/255, self.ambient_light.b/255)
-            if light.light_source:
+            if light.type == "light":
                 list = self.objects
                 for obj in list:
-                    if obj.visible & (not obj.light_source):
+                    if obj.visible & (not obj.type == "light"):
                         vertices = []
                         for vertex in obj.vertices:
                             x, y, z = vertex.x, vertex.y, vertex.z
@@ -333,12 +334,12 @@ class Graphics:
 
                     depthval /= len(face.indices) # depthval now stores the z of the object's center
                     if show & ((shoelace(points) > 0) | obj.transparent):
-                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.light_source]) # Store the info in zbuffer
+                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type]) # Store the info in zbuffer
 
         zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
 
         for f in zbuffer: # Draw each face
-            if f[5]:
+            if f[5] == "light":
                 r, g, b = (f[0].r, f[0].g, f[0].b)
             else:
                 r = int(f[0].r*f[4][0])
