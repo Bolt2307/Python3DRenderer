@@ -1,5 +1,6 @@
 {
     "name": "wedge",
+    "type": "object",
     "position": [-10, 0, 10],
     "orientation": [0, 0, 0],
     "origin": [0, 0, 0],
@@ -18,7 +19,6 @@
     "light": {
         "color": [0, 0, 0],
         "direction": [0, 0, 0],
-        "source": false,
         "spread": 0
     },
     "physics": {
