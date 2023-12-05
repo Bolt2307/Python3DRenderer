@@ -279,8 +279,12 @@ class Graphics:
 
                             area = shoelace(points)
                             if (area > 0) & show:
+                                dist_from_center = math.sqrt(points[0][0] * points[0][0] + points[0][1] * points[0][1])
                                 distance = math.sqrt((light.position.x - planepts[0].x)*(light.position.x - planepts[0].x) + (light.position.y - planepts[0].y)*(light.position.y - planepts[0].y) + (light.position.z - planepts[0].z)*(light.position.z - planepts[0].z))
-                                brightness = area / distance / 999
+                                if dist_from_center == 0:
+                                    brightness = area / distance / 999
+                                else:
+                                    brightness = area / distance / 10 / dist_from_center
                                 r = face.shading_color[0] + (light.light_color.r/255) * brightness
                                 g = face.shading_color[1] + (light.light_color.g/255) * brightness
                                 b = face.shading_color[2] + (light.light_color.b/255) * brightness
