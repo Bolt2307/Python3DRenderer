@@ -96,3 +96,6 @@ Bolt2307 : 27/11/2023
 
 Bolt2307 : 30/11/23
     + Added Optimization fix of compiling after perspective calculation in each frame
+
+Bolt2307 : 5/12/23
+    + Added lighting with colored light blending and directional lights
