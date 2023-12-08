@@ -1,0 +1,30 @@
+{
+    "name": "grass",
+    "type": "object",
+    "position": [-5, 0, -10],
+    "orientation": [0, 0, 0],
+    "origin": [0, 0, 0],
+    "scale": [0.25, 0.25, 0.25],
+    "wire_thickness": 0,
+    "visible": true,
+    "transparent": false,
+    "static": false,
+    "vertices": [[-1, -1, -1], [1, -1, -1],
+        [1,  1, -1], [-1,  1, -1],
+        [-1, -1, 1], [1, -1, 1],
+        [1,  1, 1], [-1, 1, 1]],
+    "textures": ["/grass.jpg", "/grass_side.jpg", "/dirt.jpg"],
+    "faces": [[[2, 3, 7, 6], [255, 0, 0], 0], [[5, 4, 0, 1], [255, 0, 0], 2],
+        [[3, 2, 1, 0], [0, 255, 0], 1], [[6, 7, 4, 5], [0, 255, 0], 1],
+        [[1, 2, 6, 5], [0, 0, 255], 1], [[3, 0, 4, 7], [0, 0, 255], 1]],
+    "light": {
+        "color": [0, 0, 0],
+        "direction": [0, 0, 0],
+        "spread": 0
+    },
+    "physics": {
+        "collisions": true,
+        "gravity": -9.8,
+        "weight": 10
+    }
+}
