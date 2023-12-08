@@ -3,7 +3,7 @@ import math
 import time
 import json
 import os
-import PIL
+from PIL import Image
 
 # Class definitions
 
@@ -65,9 +65,11 @@ class RGBColor:
 class Face:
     color = RGBColor(0, 0, 0)
     indices = (0,0,0)
+    texture = -1
     shading_color = (0, 0, 0)
 
-    def __init__(self, indices, color):
+    def __init__(self, indices, color, texture = -1):
+        self.texture = texture
         self.indices = indices
         self.color = color
 
@@ -90,12 +92,13 @@ class Object:
 
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
+    textures = [] # List of all textures as paths
 
     light_color = RGBColor(0, 0, 0)
     light_direction = Vector3(0, 0, 0)
     light_spread = 0
 
-    def __init__ (self, id, type, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces, light_color, light_direction, light_spread):
+    def __init__ (self, id, type, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces, light_color, light_direction, light_spread, textures = []):
         self.id = id
         self.type = type
         self.position = position
@@ -111,6 +114,7 @@ class Object:
         self.light_color = light_color
         self.light_direction = light_direction
         self.light_spread = light_spread
+        self.textures = textures
 
     def set_color (self, color): # Set the entire object to a color
         for face in self.faces:
@@ -168,6 +172,7 @@ class Graphics:
     paused = False
     crosshairspread = 0
     speed = 0.025
+    textures_path = ""
 
     analytics_font = None
     clock = None
@@ -202,12 +207,14 @@ class Graphics:
 
     # Load scene JSON as objects
     def load_objects (self, path):
+        global textures_path
         objlist = []
         with open(path) as file:
             scene = json.load(file)
             self.bgcolor = tuple(scene["bg_color"])
             self.ambient_light = RGBColor(tuple(scene["ambient"]))
             folder_path = rel_dir(scene["folder_path"])
+            textures_path = rel_dir(scene["textures_path"])
         file.close()
         for objpath in scene["object_file_paths"]:
             with open(folder_path + objpath) as file:
@@ -217,8 +224,8 @@ class Graphics:
                     vertices.append(Vector3(tuple(vertex)))
                 faces = []
                 for face in obj["faces"]:
-                    faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1]))))
-                objlist.append(Object(obj["name"], obj["type"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces, RGBColor(tuple(obj["light"]["color"])), Vector3(tuple(obj["light"]["direction"])), obj["light"]["spread"]))
+                    faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1])), face[2]))
+                objlist.append(Object(obj["name"], obj["type"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces, RGBColor(tuple(obj["light"]["color"])), Vector3(tuple(obj["light"]["direction"])), obj["light"]["spread"], obj["textures"]))
             file.close()
         return objlist
     
@@ -292,12 +299,11 @@ class Graphics:
                                 face.shading_color = (r, g, b)
 
     def render(self):
-        list = self.objects
         self.window.fill(self.bgcolor)
         t0 = time.perf_counter_ns()
         zbuffer = []
 
-        for obj in list:
+        for obj in self.objects:
             cam = self.cam
             if obj.visible:
                 locked = obj.locked
@@ -332,26 +338,64 @@ class Graphics:
                         
                         depthval += z # add z to the sum of the z values
 
+                    if len(obj.textures) > 0:
+                        texture = textures_path + obj.textures[face.texture]
+                    else:
+                        texture = False
                     depthval /= len(face.indices) # depthval now stores the z of the object's center
                     if show & ((shoelace(points) > 0) | obj.transparent):
-                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type]) # Store the info in zbuffer
+                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type, texture]) # Store the info in zbuffer
 
         zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
 
         for f in zbuffer: # Draw each face
-            if f[5] == "light":
-                r, g, b = (f[0].r, f[0].g, f[0].b)
+            if f[6] == False:
+                if f[5] == "light":
+                    r, g, b = (f[0].r, f[0].g, f[0].b)
+                else:
+                    r = int(f[0].r*f[4][0])
+                    g = int(f[0].g*f[4][1])
+                    b = int(f[0].b*f[4][2])
+                    if r > 255: r = 255
+                    if g > 255: g = 255
+                    if b > 255: b = 255
+                try:
+                    pygame.draw.polygon(self.window, (r, g, b), f[1], f[2])
+                except:
+                    pygame.draw.polygon(self.window, f[0].to_tuple(), f[1], f[2])
             else:
-                r = int(f[0].r*f[4][0])
-                g = int(f[0].g*f[4][1])
-                b = int(f[0].b*f[4][2])
-                if r > 255: r = 255
-                if g > 255: g = 255
-                if b > 255: b = 255
-            try:
-                pygame.draw.polygon(self.window, (r, g, b), f[1], f[2])
-            except:
-                pygame.draw.polygon(self.window, f[0].to_tuple(), f[1], f[2])
+                if len(f[1]) >= 4:
+                    facepts = f[1]
+                    facepts.sort(key=lambda x: x[1])
+                    top = [facepts[0], facepts[1]]
+                    bottom = [facepts[2], facepts[3]]
+                    top.sort(key=lambda x: x[0])
+                    bottom.sort(key=lambda x: x[0])
+                    facepts = [top[0], top[1], bottom[0], bottom[1]]
+                    image = Image.open(f[6], "r")
+                    texture = list(image.getdata())
+                    for y in range(image.height): # *Interpolation Magic Below*
+                        for x in range(image.width):
+                            topcoord1 = (facepts[0][0] + (x/image.width*(facepts[1][0] - facepts[0][0])), facepts[0][1] + (x/image.width*(facepts[1][1] - facepts[0][1])))
+                            topcoord2 = (facepts[0][0] + ((x + 1)/image.width*(facepts[1][0] - facepts[0][0])), facepts[0][1] + ((x + 1)/image.width*(facepts[1][1] - facepts[0][1])))
+                            bottomcoord1 = (facepts[2][0] + (x/image.width*(facepts[3][0] - facepts[2][0])), facepts[2][1] + (x/image.width*(facepts[3][1] - facepts[2][1])))
+                            bottomcoord2 = (facepts[2][0] + ((x + 1)/image.width*(facepts[3][0] - facepts[2][0])), facepts[2][1] + ((x + 1)/image.width*(facepts[3][1] - facepts[2][1])))
+                            tl = (topcoord1[0] + (y/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + (y/image.height*(bottomcoord1[1] - topcoord1[1])))
+                            tr = (topcoord2[0] + (y/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + (y/image.height*(bottomcoord2[1] - topcoord2[1])))
+                            bl = (topcoord1[0] + ((y + 1)/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + ((y + 1)/image.height*(bottomcoord1[1] - topcoord1[1])))
+                            br = (topcoord2[0] + ((y + 1)/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + ((y + 1)/image.height*(bottomcoord2[1] - topcoord2[1])))
+                            pts = [tl, tr, br, bl]
+                            r, g, b = texture[y * image.width + x]
+                            if f[5] == "light":
+                                r, g, b = (f[0].r, f[0].g, f[0].b)
+                            else:
+                                r = int(r*f[4][0])
+                                g = int(g*f[4][1])
+                                b = int(b*f[4][2])
+                                if r > 255: r = 255
+                                if g > 255: g = 255
+                                if b > 255: b = 255
+                            pygame.draw.polygon(self.window, (r, g, b), pts, 0)
 
         return time.perf_counter_ns() - t0
                 
