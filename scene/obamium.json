@@ -1,0 +1,29 @@
+{
+    "name": "obamium",
+    "type": "object",
+    "position": [0, 0, 20],
+    "orientation": [0, 0, 0],
+    "origin": [0, 0, 0],
+    "scale": [0.25, 0.25, 0.25],
+    "wire_thickness": 0,
+    "visible": true,
+    "transparent": true,
+    "static": false,
+    "vertices": [[-1, -1, -1], [1, -1, -1],
+        [-1, -1, 1], [1, -1, 1], 
+        [0, 1, 0]],
+    "textures": ["/obama.png"],
+    "faces": [[[3, 1, 2, 0], [255, 255, 255], 0], [[4, 4, 1, 0], [255, 255, 255], 0],
+        [[4, 4, 3, 1], [255, 255, 255], 0], [[2, 3, 4, 4], [255, 255, 255], 0],
+        [[4, 4, 0, 2], [255, 255, 255], 0]],
+    "light": {
+        "color": [0, 0, 0],
+        "direction": [0, 0, 0],
+        "spread": 0
+    },
+    "physics": {
+        "collisions": true,
+        "gravity": -9.8,
+        "weight": 10
+    }
+}
