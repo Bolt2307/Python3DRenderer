@@ -65,10 +65,10 @@ class RGBColor:
 class Face:
     color = RGBColor(0, 0, 0)
     indices = (0,0,0)
-    texture = -1
+    texture = False
     shading_color = (0, 0, 0)
 
-    def __init__(self, indices, color, texture = -1):
+    def __init__(self, indices, color, texture = False):
         self.texture = texture
         self.indices = indices
         self.color = color
@@ -257,13 +257,14 @@ class Graphics:
         return Vector3(x, y, z)
 
     def bake_lighting (self):
+        for obj in self.objects:
+            for face in obj.faces:
+                    face.shading_color = (self.ambient_light.r/255, self.ambient_light.g/255, self.ambient_light.b/255)
         for light in self.objects:
-            for face in light.faces:
-                face.shading_color = (self.ambient_light.r/255, self.ambient_light.g/255, self.ambient_light.b/255)
             if light.type == "light":
                 list = self.objects
                 for obj in list:
-                    if obj.visible & (not obj.type == "light"):
+                    if obj.visible & (obj.type != "light"):
                         vertices = []
                         for vertex in obj.vertices:
                             x, y, z = vertex.x, vertex.y, vertex.z
@@ -275,6 +276,7 @@ class Graphics:
                             vertices.append(self.perspective(light.position, light.light_direction, Vector3(x, y, z)))
 
                         for face in obj.faces:
+                            offscreen = True
                             show = True
                             points = []
                             planepts = []
@@ -283,10 +285,12 @@ class Graphics:
                                 if z < 0:
                                     show = False
                                 points.append(((x * light.light_spread/z), (-y * light.light_spread/z)))
+                                if (x * light.light_spread/z <= self.window.get_width()) & (y * light.light_spread/z <= self.window.get_height()):
+                                    offscreen = False
                                 planepts.append(Vector3(x, y, z))
 
                             area = shoelace(points)
-                            if (area > 0) & show:
+                            if (area > 0) & (show & (not offscreen)):
                                 dist_from_center = math.sqrt(points[0][0] * points[0][0] + points[0][1] * points[0][1])
                                 distance = math.sqrt((light.position.x - planepts[0].x)*(light.position.x - planepts[0].x) + (light.position.y - planepts[0].y)*(light.position.y - planepts[0].y) + (light.position.z - planepts[0].z)*(light.position.z - planepts[0].z))
                                 if dist_from_center == 0:
@@ -323,6 +327,7 @@ class Graphics:
                     vertices.append(self.perspective(cam.position, cam.rotation, Vector3(x, y, z)))
 
                 for face in obj.faces:
+                    offscreen = True
                     show = True
                     points = []
                     depthval = 0
@@ -334,6 +339,8 @@ class Graphics:
                             show = False
                             break
                         points.append(((x * cam.focal_length/z+self.window.get_width()/2) * (self.window.get_width() / self.screen.fullwidth), (-y * cam.focal_length/z+self.window.get_height()/2)*(self.window.get_height() / self.screen.full)))
+                        if (x * cam.focal_length/z <= self.window.get_width()) & (y * cam.focal_length/z <= self.window.get_height()):
+                            offscreen = False
                         planepts.append(Vector3(x, y, z))
                         
                         depthval += z # add z to the sum of the z values
@@ -343,19 +350,25 @@ class Graphics:
                     else:
                         texture = False
                     depthval /= len(face.indices) # depthval now stores the z of the object's center
-                    if show & ((shoelace(points) > 0) | obj.transparent):
-                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type, texture]) # Store the info in zbuffer
+                    if (show & (not offscreen)) & ((shoelace(points) > 0) | obj.transparent):
+                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type, texture, obj.transparent]) # Store the info in zbuffer
 
         zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
 
         for f in zbuffer: # Draw each face
-            if f[6] == False:
+            shading = f[4]
+            shading = list(shading)
+            if shading[0] > 1.3: shading[0] = 1.3
+            if shading[1] > 1.3: shading[1] = 1.3
+            if shading[2] > 1.3: shading[2] = 1.3
+            shading = tuple(shading)
+            if (not f[7]) | (f[6] == False):
                 if f[5] == "light":
                     r, g, b = (f[0].r, f[0].g, f[0].b)
                 else:
-                    r = int(f[0].r*f[4][0])
-                    g = int(f[0].g*f[4][1])
-                    b = int(f[0].b*f[4][2])
+                    r = int(f[0].r*shading[0])
+                    g = int(f[0].g*shading[1])
+                    b = int(f[0].b*shading[2])
                     if r > 255: r = 255
                     if g > 255: g = 255
                     if b > 255: b = 255
@@ -363,7 +376,7 @@ class Graphics:
                     pygame.draw.polygon(self.window, (r, g, b), f[1], f[2])
                 except:
                     pygame.draw.polygon(self.window, f[0].to_tuple(), f[1], f[2])
-            else:
+            if f[6] != False:
                 if len(f[1]) >= 4:
                     facepts = f[1]
                     facepts.sort(key=lambda x: x[1])
@@ -385,13 +398,13 @@ class Graphics:
                             bl = (topcoord1[0] + ((y + 1)/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + ((y + 1)/image.height*(bottomcoord1[1] - topcoord1[1])))
                             br = (topcoord2[0] + ((y + 1)/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + ((y + 1)/image.height*(bottomcoord2[1] - topcoord2[1])))
                             pts = [tl, tr, br, bl]
-                            r, g, b = texture[y * image.width + x]
+                            pixcolor = (texture[y * image.width + x][0], texture[y * image.width + x][1], texture[y * image.width + x][2])
                             if f[5] == "light":
-                                r, g, b = (f[0].r, f[0].g, f[0].b)
+                                r, g, b = (pixcolor[0], pixcolor[1], pixcolor[2])
                             else:
-                                r = int(r*f[4][0])
-                                g = int(g*f[4][1])
-                                b = int(b*f[4][2])
+                                r = pixcolor[0]*shading[0]
+                                g = pixcolor[1]*shading[1]
+                                b = pixcolor[2]*shading[2]
                                 if r > 255: r = 255
                                 if g > 255: g = 255
                                 if b > 255: b = 255
@@ -486,6 +499,9 @@ class Graphics:
         if not self.paused:
             pygame.mouse.set_pos(self.window.get_width()/2, self.window.get_height()/2) #mouse "lock"
             self.bake_lighting()
+            self.objects[find_obj.by_id("light", self.objects)].position = self.cam.position
+            self.objects[find_obj.by_id("light", self.objects)].orientation = self.cam.rotation
+            self.objects[find_obj.by_id("light", self.objects)].light_direction = self.cam.rotation
             # Change position by velocity and apply drag to velocity
             self.cam.position.x, self.cam.position.y, self.cam.position.z = self.cam.position.x + self.cam.velocity.x, self.cam.position.y + self.cam.velocity.y, self.cam.position.z + self.cam.velocity.z
             self.cam.velocity.x, self.cam.velocity.y, self.cam.velocity.z = self.cam.velocity.x * 0.85, self.cam.velocity.y * 0.85, self.cam.velocity.z * 0.85
