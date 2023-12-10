@@ -499,9 +499,6 @@ class Graphics:
         if not self.paused:
             pygame.mouse.set_pos(self.window.get_width()/2, self.window.get_height()/2) #mouse "lock"
             self.bake_lighting()
-            self.objects[find_obj.by_id("light", self.objects)].position = self.cam.position
-            self.objects[find_obj.by_id("light", self.objects)].orientation = self.cam.rotation
-            self.objects[find_obj.by_id("light", self.objects)].light_direction = self.cam.rotation
             # Change position by velocity and apply drag to velocity
             self.cam.position.x, self.cam.position.y, self.cam.position.z = self.cam.position.x + self.cam.velocity.x, self.cam.position.y + self.cam.velocity.y, self.cam.position.z + self.cam.velocity.z
             self.cam.velocity.x, self.cam.velocity.y, self.cam.velocity.z = self.cam.velocity.x * 0.85, self.cam.velocity.y * 0.85, self.cam.velocity.z * 0.85
