@@ -1,15 +1,86 @@
 import pygame
 import math
 import time
-import json
 import os
 from PIL import Image
 
 # Class definitions
+def rotate2D(x,y,r):
+    return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
 
 # Triple tuple representing 3d coordinates, 3d rotation, 3d movement, etc.
 class Vector3:
     x, y, z = 0, 0, 0
+
+    def __init__(self, x, y=0, z=0):
+        if (type(x) is int) | (type(x) is float):
+            self.x, self.y, self.z = x, y, z
+        elif type(x) is tuple:
+            self.x, self.y, self.z = x[0], x[1], x[2]
+
+    def to_tuple(self):
+        return (self.x, self.y, self.z)
+    
+    # Returns (x1-x2,y1-y2,z1-z2)
+    def subtract_by_vector(self,v3,set_this_vector):
+        v = Vector3(self.x-v3.x,self.y-v3.y,self.z-v3.z)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1+x2,y1+y2,z1+z2)
+    def add_by_vector(self,v3,set_this_vector):
+        v = Vector3(self.x+v3.x,self.y+v3.y,self.z+v3.z)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1*x2,y1*y2,z1*z2)
+    def multiply_by_vector(self,v3,set_this_vector):
+        v = Vector3(self.x*v3.x,self.y*v3.y,self.z*v3.z)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1/x2,y1/y2,z1/z2)
+    def divide_by_vector(self,v3,set_this_vector):
+        v = Vector3(self.x/v3.x,self.y/v3.y,self.z/v3.z)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1-n,y1-n,z1-n)
+    def subtract_by_num(self,num,set_this_vector):
+        v = Vector3(self.x-num,self.y-num,self.z-num)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1+n,y1+n,z1+n)
+    def add_by_num(self,num,set_this_vector):
+        v = Vector3(self.x+num,self.y+num,self.z+num)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1*n,y1*n,z1*n)
+    def multiply_by_num(self,num,set_this_vector):
+        v = Vector3(self.x*num,self.y*num,self.z*num)
+        if set_this_vector:
+            self = v
+        return v
+    
+    # Returns (x1/n,y1/n,z1/n)
+    def divide_by_num(self,num,set_this_vector):
+        v = Vector3(self.x/num,self.y/num,self.z/num)
+        if set_this_vector:
+            self = v
+        return v
+    
+    def rotate_by_euler(self,rotation):
+        self.y, self.z = rotate2D(self.y, self.z, rotation.x)
+        self.x, self.z = rotate2D(self.x, self.z, rotation.y)
+        self.x, self.y = rotate2D(self.x, self.y, rotation.z)
 
     def __init__(self, x, y=0, z=0):
         if (type(x) is int) | (type(x) is float):
@@ -48,6 +119,7 @@ class Camera:
     position = Vector3(0,0,0)
     rotation = Vector3(0,0,0) # x = rotation.y, y = rotation.x, z = roll
     velocity = Vector3(0,0,0)
+    drag = 1
     focal_length = 400
 
 class RGBColor:
@@ -65,13 +137,13 @@ class RGBColor:
 class Face:
     color = RGBColor(0, 0, 0)
     indices = (0,0,0)
-    texture = False
     shading_color = (0, 0, 0)
+    texture = False
 
-    def __init__(self, indices, color, texture = False):
-        self.texture = texture
+    def __init__(self, indices, color, texture=False):
         self.indices = indices
         self.color = color
+        self.texture = texture
 
 class Object:
     static = True
@@ -92,13 +164,12 @@ class Object:
 
     vertices = [] # List of all points as Vector3 
     faces = [] # List of all faces as faces
-    textures = [] # List of all textures as paths
 
     light_color = RGBColor(0, 0, 0)
     light_direction = Vector3(0, 0, 0)
     light_spread = 0
 
-    def __init__ (self, id, type, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces, light_color, light_direction, light_spread, textures = []):
+    def __init__ (self, id, type, position, orientation, origin, scale, wire_thickness, visible, transparent, static, vertices, faces, light_color, light_direction, light_spread, textures):
         self.id = id
         self.type = type
         self.position = position
@@ -161,20 +232,17 @@ def copy_obj (id, new_id, list, new_list):
         new_list.append(Object(new_id, obj.position, obj.orientation, obj.origin, obj.scale, obj.wire_thickness, obj.visible, obj.transparent, obj.static, obj.vertices, obj.faces))
 
 class Graphics:
-    active = True
-
+    textures_path = ""
     screen = Screen()
     objects = []
-
+    
     bgcolor = (255, 255, 255)
     specstog = False
     specsHeld = False
-    paused = False
     crosshairspread = 0
     speed = 0.025
-    textures_path = ""
+    ambient_light = (0, 0, 0)
 
-    analytics_font = None
     clock = None
     cam = Camera()
     window = None
@@ -182,52 +250,8 @@ class Graphics:
     frame = 0
     frame_cap = 1000
 
-    def __init__(self):
-        self.bgcolor = (255, 255, 255)
-        self.specstog = False
-        self.specsHeld = False
-        self.paused = False
-        self.crosshairspread = 0
-        self.speed = 0.025
-        self.ambient_light = RGBColor(0, 0, 0)
-        self.pause_held = False
-
-        pygame.init()
-        pygame.font.init()
-        self.analytics_font = pygame.font.SysFont('cousine', 20)
-        self.window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-        self.screen.fullwidth, self.screen.full = self.window.get_width(), self.window.get_height() #finds fullscreen dimensions
-        self.window = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
-        self.clock = pygame.time.Clock()
-        pygame.display.set_caption('Python (Pygame) - 3D Renderer')
-        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
-        pygame.mouse.set_visible(False)
-
-        self.objects = self.load_objects(rel_dir("scene_path.json"))
-
-    # Load scene JSON as objects
-    def load_objects (self, path):
-        global textures_path
-        objlist = []
-        with open(path) as file:
-            scene = json.load(file)
-            self.bgcolor = tuple(scene["bg_color"])
-            self.ambient_light = RGBColor(tuple(scene["ambient"]))
-            folder_path = rel_dir(scene["folder_path"])
-            textures_path = rel_dir(scene["textures_path"])
-        file.close()
-        for objpath in scene["object_file_paths"]:
-            with open(folder_path + objpath) as file:
-                obj = json.load(file)
-                vertices = []
-                for vertex in obj["vertices"]:
-                    vertices.append(Vector3(tuple(vertex)))
-                faces = []
-                for face in obj["faces"]:
-                    faces.append(Face((tuple(face[0])), RGBColor(tuple(face[1])), face[2]))
-                objlist.append(Object(obj["name"], obj["type"], Vector3(tuple(obj["position"])), Vector3(tuple(obj["orientation"])), Vector3(tuple(obj["origin"])), Vector3(tuple(obj["scale"])), obj["wire_thickness"], obj["visible"], obj["transparent"], obj["static"], vertices, faces, RGBColor(tuple(obj["light"]["color"])), Vector3(tuple(obj["light"]["direction"])), obj["light"]["spread"], obj["textures"]))
-            file.close()
-        return objlist
+    def __init__(self,window):
+        self.window = window
     
     def apply_changes (self, obj, vertex):
         x, y, z = vertex.x, vertex.y, vertex.z
@@ -255,6 +279,35 @@ class Graphics:
         y, z = rotate_point(y, z, pitch)
         x, y = rotate_point(x, y, roll)
         return Vector3(x, y, z)
+    
+    def draw_texture (self, facepts, texture, scrn, shading=(1, 1, 1)):
+        facepts.sort(key=lambda x: x[1])
+        top = [facepts[0], facepts[1]]
+        bottom = [facepts[2], facepts[3]]
+        top.sort(key=lambda x: x[0])
+        bottom.sort(key=lambda x: x[0])
+        facepts = [top[0], top[1], bottom[0], bottom[1]]
+        image = Image.open(texture, "r")
+        texture = list(image.getdata())
+        for y in range(image.height): # *Interpolation Magic Below*
+            for x in range(image.width):
+                topcoord1 = (facepts[0][0] + (x/image.width*(facepts[1][0] - facepts[0][0])), facepts[0][1] + (x/image.width*(facepts[1][1] - facepts[0][1])))
+                topcoord2 = (facepts[0][0] + ((x + 1)/image.width*(facepts[1][0] - facepts[0][0])), facepts[0][1] + ((x + 1)/image.width*(facepts[1][1] - facepts[0][1])))
+                bottomcoord1 = (facepts[2][0] + (x/image.width*(facepts[3][0] - facepts[2][0])), facepts[2][1] + (x/image.width*(facepts[3][1] - facepts[2][1])))
+                bottomcoord2 = (facepts[2][0] + ((x + 1)/image.width*(facepts[3][0] - facepts[2][0])), facepts[2][1] + ((x + 1)/image.width*(facepts[3][1] - facepts[2][1])))
+                tl = (topcoord1[0] + (y/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + (y/image.height*(bottomcoord1[1] - topcoord1[1])))
+                tr = (topcoord2[0] + (y/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + (y/image.height*(bottomcoord2[1] - topcoord2[1])))
+                bl = (topcoord1[0] + ((y + 1)/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + ((y + 1)/image.height*(bottomcoord1[1] - topcoord1[1])))
+                br = (topcoord2[0] + ((y + 1)/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + ((y + 1)/image.height*(bottomcoord2[1] - topcoord2[1])))
+                pts = [tl, tr, br, bl]
+                pixcolor = (texture[y * image.width + x][0], texture[y * image.width + x][1], texture[y * image.width + x][2])
+                r = pixcolor[0]*shading[0]
+                g = pixcolor[1]*shading[1]
+                b = pixcolor[2]*shading[2]
+                if r > 255: r = 255
+                if g > 255: g = 255
+                if b > 255: b = 255
+                pygame.draw.polygon(scrn, (r, g, b), pts, 0)
 
     def bake_lighting (self):
         for obj in self.objects:
@@ -303,11 +356,12 @@ class Graphics:
                                 face.shading_color = (r, g, b)
 
     def render(self):
+        objlist = self.objects
         self.window.fill(self.bgcolor)
         t0 = time.perf_counter_ns()
         zbuffer = []
 
-        for obj in self.objects:
+        for obj in objlist:
             cam = self.cam
             if obj.visible:
                 locked = obj.locked
@@ -327,7 +381,6 @@ class Graphics:
                     vertices.append(self.perspective(cam.position, cam.rotation, Vector3(x, y, z)))
 
                 for face in obj.faces:
-                    offscreen = True
                     show = True
                     points = []
                     depthval = 0
@@ -339,19 +392,18 @@ class Graphics:
                             show = False
                             break
                         points.append(((x * cam.focal_length/z+self.window.get_width()/2) * (self.window.get_width() / self.screen.fullwidth), (-y * cam.focal_length/z+self.window.get_height()/2)*(self.window.get_height() / self.screen.full)))
-                        if (x * cam.focal_length/z <= self.window.get_width()) & (y * cam.focal_length/z <= self.window.get_height()):
-                            offscreen = False
                         planepts.append(Vector3(x, y, z))
                         
                         depthval += z # add z to the sum of the z values
 
                     if len(obj.textures) > 0:
-                        texture = textures_path + obj.textures[face.texture]
+                        texture = self.textures_path + obj.textures[face.texture]
                     else:
                         texture = False
+
                     depthval /= len(face.indices) # depthval now stores the z of the object's center
-                    if (show & (not offscreen)) & ((shoelace(points) > 0) | obj.transparent):
-                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type, texture, obj.transparent]) # Store the info in zbuffer
+                    if show & ((shoelace(points) > 0) | obj.transparent):
+                        zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type, texture, obj.transparent])
 
         zbuffer.sort(key=lambda x: x[3], reverse=True) # Sort z buffer by the z distance from the camera
 
@@ -378,39 +430,22 @@ class Graphics:
                     pygame.draw.polygon(self.window, f[0].to_tuple(), f[1], f[2])
             if f[6] != False:
                 if len(f[1]) >= 4:
-                    facepts = f[1]
-                    facepts.sort(key=lambda x: x[1])
-                    top = [facepts[0], facepts[1]]
-                    bottom = [facepts[2], facepts[3]]
-                    top.sort(key=lambda x: x[0])
-                    bottom.sort(key=lambda x: x[0])
-                    facepts = [top[0], top[1], bottom[0], bottom[1]]
-                    image = Image.open(f[6], "r")
-                    texture = list(image.getdata())
-                    for y in range(image.height): # *Interpolation Magic Below*
-                        for x in range(image.width):
-                            topcoord1 = (facepts[0][0] + (x/image.width*(facepts[1][0] - facepts[0][0])), facepts[0][1] + (x/image.width*(facepts[1][1] - facepts[0][1])))
-                            topcoord2 = (facepts[0][0] + ((x + 1)/image.width*(facepts[1][0] - facepts[0][0])), facepts[0][1] + ((x + 1)/image.width*(facepts[1][1] - facepts[0][1])))
-                            bottomcoord1 = (facepts[2][0] + (x/image.width*(facepts[3][0] - facepts[2][0])), facepts[2][1] + (x/image.width*(facepts[3][1] - facepts[2][1])))
-                            bottomcoord2 = (facepts[2][0] + ((x + 1)/image.width*(facepts[3][0] - facepts[2][0])), facepts[2][1] + ((x + 1)/image.width*(facepts[3][1] - facepts[2][1])))
-                            tl = (topcoord1[0] + (y/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + (y/image.height*(bottomcoord1[1] - topcoord1[1])))
-                            tr = (topcoord2[0] + (y/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + (y/image.height*(bottomcoord2[1] - topcoord2[1])))
-                            bl = (topcoord1[0] + ((y + 1)/image.height*(bottomcoord1[0] - topcoord1[0])), topcoord1[1] + ((y + 1)/image.height*(bottomcoord1[1] - topcoord1[1])))
-                            br = (topcoord2[0] + ((y + 1)/image.height*(bottomcoord2[0] - topcoord2[0])), topcoord2[1] + ((y + 1)/image.height*(bottomcoord2[1] - topcoord2[1])))
-                            pts = [tl, tr, br, bl]
-                            pixcolor = (texture[y * image.width + x][0], texture[y * image.width + x][1], texture[y * image.width + x][2])
-                            if f[5] == "light":
-                                r, g, b = (pixcolor[0], pixcolor[1], pixcolor[2])
-                            else:
-                                r = pixcolor[0]*shading[0]
-                                g = pixcolor[1]*shading[1]
-                                b = pixcolor[2]*shading[2]
-                                if r > 255: r = 255
-                                if g > 255: g = 255
-                                if b > 255: b = 255
-                            pygame.draw.polygon(self.window, (r, g, b), pts, 0)
+                    if f[5] == "light":
+                        self.draw_texture(f[1], f[6], self.window)
+                    else:
+                        self.draw_texture(f[1], f[6], self.window, f[4])
+
+        self.offset_num = 1
 
         return time.perf_counter_ns() - t0
+    
+    # Print string to the debug
+    offset_num = 1
+    def debug_log(self,string,font):
+        text = font.render(string,False,(0,0,0))
+        self.window.blit(text,(10,self.offset_num * 20))
+        self.offset_num += 1
+
                 
     def gui(self):
         t0 = time.perf_counter_ns()
@@ -421,147 +456,7 @@ class Graphics:
         pygame.draw.line(self.window, 'red', (self.window.get_width()/2+crosshairspread, self.window.get_height()/2), (self.window.get_width()/2+10+crosshairspread, self.window.get_height()/2)) #horizontal right
         pygame.draw.line(self.window, 'red', (self.window.get_width()/2, self.window.get_height()/2-10-crosshairspread), (self.window.get_width()/2, self.window.get_height()/2-crosshairspread)) #vertical top
         pygame.draw.line(self.window, 'red', (self.window.get_width()/2, self.window.get_height()/2+crosshairspread), (self.window.get_width()/2, self.window.get_height()/2+10+crosshairspread)) #vertical vertical bottom
-
-        if self.paused: # Show pause menu
-            pausetext = self.analytics_font.render('PAUSED', False, (200, 0, 0))
-            self.window.blit(pausetext, (self.window.get_width()/2, 0))
         
         if self.specstog: # Show spects
             pass
         return time.perf_counter_ns()-t0
-
-    def handle_control(self):
-        t0 = time.perf_counter_ns()
-        keys = pygame.key.get_pressed()
-
-        #rotation
-        rel = pygame.mouse.get_rel()
-
-        if not self.paused: # When unpaused
-            cam = self.cam
-            cam.rotation.y += rel[0]*0.15
-            cam.rotation.x -= rel[1]*0.15 #mouse sense
-            
-            speed = self.speed
-            #movement
-            if keys[pygame.K_LSHIFT]: #sprinting
-                if speed < 0.1:
-                    self.speed += 0.01
-                if cam.focal_length > 300:
-                    cam.focal_length -= 10
-            else:
-                if speed > 0.025:
-                    self.speed -= 0.005
-                if cam.focal_length < 400:
-                    cam.focal_length += 10
-            if keys[pygame.K_w]:
-                cam.velocity.z += speed*math.cos(math.radians(cam.rotation.y))
-                cam.velocity.x += speed*math.sin(math.radians(cam.rotation.y))
-            if keys[pygame.K_s]:
-                cam.velocity.z -= speed*math.cos(math.radians(cam.rotation.y))
-                cam.velocity.x -= speed*math.sin(math.radians(cam.rotation.y))
-            if keys[pygame.K_a]:
-                cam.velocity.z -= speed*math.cos(math.radians(cam.rotation.y+90))
-                cam.velocity.x -= speed*math.sin(math.radians(cam.rotation.y+90))
-            if keys[pygame.K_d]:
-                cam.velocity.z += speed*math.cos(math.radians(cam.rotation.y+90))
-                cam.velocity.x += speed*math.sin(math.radians(cam.rotation.y+90))
-            if keys[pygame.K_SPACE]:
-                if cam.position.y <= 0:
-                    cam.velocity.y += 1
-        else: # In pause menu
-            if keys[pygame.K_e]: #exits the game if e is pressed in pause
-                self.active = False
-
-            if keys[pygame.K_f]:
-                if not self.specsHeld:
-                    self.specstog = not self.specstog
-                    self.specsHeld = True
-            else:
-                self.specsHeld = False
-
-        if keys[pygame.K_ESCAPE]:
-            if not self.pause_held: # Pause handling
-                self.pause_held = True
-                self.paused = not self.paused
-                pygame.mouse.set_visible(not pygame.mouse.get_visible())
-                if self.paused:
-                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-                else:
-                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
-        else:
-            self.pause_held = False
-
-        return time.perf_counter_ns() - t0
-
-    def update(self):
-        t0 = time.perf_counter_ns()
-        if not self.paused:
-            pygame.mouse.set_pos(self.window.get_width()/2, self.window.get_height()/2) #mouse "lock"
-            self.bake_lighting()
-            # Change position by velocity and apply drag to velocity
-            self.cam.position.x, self.cam.position.y, self.cam.position.z = self.cam.position.x + self.cam.velocity.x, self.cam.position.y + self.cam.velocity.y, self.cam.position.z + self.cam.velocity.z
-            self.cam.velocity.x, self.cam.velocity.y, self.cam.velocity.z = self.cam.velocity.x * 0.85, self.cam.velocity.y * 0.85, self.cam.velocity.z * 0.85
-            if self.cam.position.y > 0: # Apply Gravity
-                self.cam.velocity.y -= 0.02
-            else:
-                self.cam.velocity.y = 0
-                self.cam.position.y = 0
-        return time.perf_counter_ns() - t0
-    
-    log_position = 0
-    def log_text(self,text,font):
-        text_holder = font.render(text,False,(0,0,0))
-        self.screen.blit(text_holder, (5,self.log_position))
-        self.log_position += 20
-
-# Eventually put this in the engine
-g = Graphics()
-
-time_elapsed = 0
-last_timestamp = time.perf_counter()
-tick = 0
-
-while g.active:
-    current_timestamp = time.perf_counter()
-    time_elapsed += current_timestamp - last_timestamp # Add change in time to the time_elapsed
-    last_timestamp = current_timestamp
-    if time_elapsed > 1 / g.frame_cap: # Do not update unless enough time has passed
-        g.frame += 1
-
-        # Handle events
-        for gevent in pygame.event.get():
-            pass
-        
-        # Print elapsed time ever n frames
-        if g.frame % 60 == 0:
-            # Take user input
-            cntrl_time = g.handle_control()
-
-            # Update
-            g.update()
-            tick += 1
-            
-            # Render objects
-            render_time_3D = g.render()
-
-            # Render GUI
-            render_time_2D = g.gui()
-        else:
-            # Take user input
-            g.handle_control()
-
-            # Update
-            g.update()
-            
-            # Render objects
-            g.render()
-            tick += 1
-
-            # Render GUI
-            g.gui()
-
-        pygame.display.flip() # Invert screen
-        pygame.display.update() # Display new render
-        time_elapsed = 0 # Reset elapsed time
-quit()
