@@ -110,3 +110,6 @@ Lrae1207 13/12/23
         + Fixed mouse-lock
         + Adjusted drag and speed for smoother movement
         + Added back debug_logging
+Lrae1207 14/12/23
+    + Fixed baking
+    + Added more specs for displaying face and object counts
