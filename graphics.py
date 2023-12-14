@@ -119,7 +119,8 @@ class Camera:
     position = Vector3(0,0,0)
     rotation = Vector3(0,0,0) # x = rotation.y, y = rotation.x, z = roll
     velocity = Vector3(0,0,0)
-    drag = 1
+    drag = 0.8
+    air_drag = 0.8
     focal_length = 400
 
 class RGBColor:
@@ -243,12 +244,14 @@ class Graphics:
     speed = 0.025
     ambient_light = (0, 0, 0)
 
+    debug_text_buffer = []
+
     clock = None
     cam = Camera()
     window = None
 
     frame = 0
-    frame_cap = 1000
+    frame_cap = 60
 
     def __init__(self,window):
         self.window = window
@@ -356,6 +359,7 @@ class Graphics:
                                 face.shading_color = (r, g, b)
 
     def render(self):
+        self.bake_lighting()
         objlist = self.objects
         self.window.fill(self.bgcolor)
         t0 = time.perf_counter_ns()
@@ -434,17 +438,18 @@ class Graphics:
                         self.draw_texture(f[1], f[6], self.window)
                     else:
                         self.draw_texture(f[1], f[6], self.window, f[4])
-
-        self.offset_num = 1
-
+        index = 0
+        for text in self.debug_text_buffer:
+            self.window.blit(text,(5,index * 20))
+            index += 1
+        self.debug_text_buffer = []
+        
         return time.perf_counter_ns() - t0
     
     # Print string to the debug
-    offset_num = 1
     def debug_log(self,string,font):
         text = font.render(string,False,(0,0,0))
-        self.window.blit(text,(10,self.offset_num * 20))
-        self.offset_num += 1
+        self.debug_text_buffer.append(text)
 
                 
     def gui(self):
