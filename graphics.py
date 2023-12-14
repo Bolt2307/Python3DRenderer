@@ -233,6 +233,8 @@ def copy_obj (id, new_id, list, new_list):
         new_list.append(Object(new_id, obj.position, obj.orientation, obj.origin, obj.scale, obj.wire_thickness, obj.visible, obj.transparent, obj.static, obj.vertices, obj.faces))
 
 class Graphics:
+    rendered_faces = 0
+    rendered_objects = 0
     textures_path = ""
     screen = Screen()
     objects = []
@@ -358,16 +360,24 @@ class Graphics:
                                 b = face.shading_color[2] + (light.light_color.b/255) * brightness
                                 face.shading_color = (r, g, b)
 
+    def get_rendered_objects(self):
+        return self.rendered_objects
+    
+    def get_rendered_faces(self):
+        return self.rendered_faces
+
     def render(self):
+        t0 = time.perf_counter_ns()
         self.bake_lighting()
         objlist = self.objects
         self.window.fill(self.bgcolor)
-        t0 = time.perf_counter_ns()
         zbuffer = []
 
+        self.rendered_objects = 0
         for obj in objlist:
             cam = self.cam
             if obj.visible:
+                self.rendered_objects += 1
                 locked = obj.locked
                 vertices = []
                 for vertex in obj.vertices:
@@ -384,6 +394,7 @@ class Graphics:
 
                     vertices.append(self.perspective(cam.position, cam.rotation, Vector3(x, y, z)))
 
+                self.rendered_faces = 0
                 for face in obj.faces:
                     show = True
                     points = []
@@ -406,6 +417,8 @@ class Graphics:
                         texture = False
 
                     depthval /= len(face.indices) # depthval now stores the z of the object's center
+                    if show:
+                        self.rendered_faces += 1
                     if show & ((shoelace(points) > 0) | obj.transparent):
                         zbuffer.append([face.color, points, obj.wire_thickness, depthval, face.shading_color, obj.type, texture, obj.transparent])
 
@@ -448,7 +461,7 @@ class Graphics:
     
     # Print string to the debug
     def debug_log(self,string,font):
-        text = font.render(string,False,(0,0,0))
+        text = font.render(string,False,(0,0,0),(255,255,255))
         self.debug_text_buffer.append(text)
 
                 
