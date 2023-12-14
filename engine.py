@@ -4,6 +4,7 @@ import pygame
 import json
 import time
 import graphics
+import helpers
 
 # Function definitions
 def rotate2D(x,y,r):
@@ -375,6 +376,8 @@ class Engine:
         if not self.paused: # When unpaused
             cam.rotation.y += rel[0]*0.15
             cam.rotation.x -= rel[1]*0.15 #mouse sense
+
+            cam.rotation.x = helpers.clamp(-90,90,cam.rotation.x)
             
             speed = self.speed
             #movement
@@ -467,7 +470,9 @@ while engine.active:
             # Render GUI
             debug_data.append(("graphics:render2D(us)",g.gui()/1000))
             
-            debug_data.append(("fps:",1/time_elapsed))
+            debug_data.append(("graphics:render3D:faces",g.get_rendered_faces()))
+            debug_data.append(("graphics:render3D:objects",g.get_rendered_objects()))
+            debug_data.append(("fps",1/time_elapsed))
         else:
             # Engine update
             engine.handle_control()
