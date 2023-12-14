@@ -103,3 +103,10 @@ Bolt2307 : 5/12/23
 Bolt2307 7/12/23
     + Added Face Textures, Face must be a quadrilateral
     + Incorporated Face Textures with colored lighting system
+
+Lrae1207 13/12/23
+    + Fixed control and update migration from graphics to engine
+    + Re-implemented several broken features
+        + Fixed mouse-lock
+        + Adjusted drag and speed for smoother movement
+        + Added back debug_logging
