@@ -15,3 +15,4 @@ Progress as of 25/11/2023:
 Windows 10 OS:
 ![alt text](https://github.com/Lrae1207/Python3DRenderer-OptimizationPrototype/blob/main/images/Dev-Early0.png?raw=true)
 ![alt text](https://github.com/Lrae1207/Python3DRenderer-OptimizationPrototype/blob/main/images/Dev-Early1.png?raw=true)
+<img src="https://github.com/Lrae1207/Python3DRenderer-Workspace/blob/main/images/light-dev.png?raw=true" alt="light-dev.png"/>![image](https://github.com/Lrae1207/Python3DRenderer-Workspace/assets/109258251/0437ecfa-96ae-4fb9-aa44-9e67332d4cfe)
