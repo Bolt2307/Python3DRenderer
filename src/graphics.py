@@ -153,6 +153,7 @@ class Object:
 
     id = ""
     type = ""
+    
     position = Vector3(0,0,0)
     orientation = Vector3(0, 0, 0)
     origin = Vector3(0, 0, 0)
