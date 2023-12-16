@@ -3,6 +3,7 @@ import math
 import time
 import os
 from PIL import Image
+from ctypes import *
 
 # Class definitions
 def rotate2D(x,y,r):
@@ -202,15 +203,14 @@ def rotate_point (x, y, r):
   return x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
 
 def shoelace (pts):
-    try:
-        area = 0
-        point = 0
-        for point in range(len(pts) - 1):
-            area += pts[point][0] * pts[point + 1][1] - pts[point][1] * pts[point + 1][0]
-        area += pts[len(pts) - 1][0] * pts[0][1] - pts[len(pts) - 1][1] * pts[0][0]
-        return area
-    except:
+    if len(pts) == 0:
         return 0
+    area = 0
+    point = 0
+    for point in range(len(pts) - 1):
+        area += pts[point][0] * pts[point + 1][1] - pts[point][1] * pts[point + 1][0]
+    area += pts[len(pts) - 1][0] * pts[0][1] - pts[len(pts) - 1][1] * pts[0][0]
+    return area
 
 def normal (points):
     ab = Vector3(points[1].x - points[0].x, points[1].y - points[0].y, points[1].z - points[0].z)
@@ -233,6 +233,8 @@ def copy_obj (id, new_id, list, new_list):
         new_list.append(Object(new_id, obj.position, obj.orientation, obj.origin, obj.scale, obj.wire_thickness, obj.visible, obj.transparent, obj.static, obj.vertices, obj.faces))
 
 class Graphics:
+    graphics_accel = CDLL
+
     rendered_faces = 0
     rendered_objects = 0
     textures_path = ""
@@ -258,6 +260,10 @@ class Graphics:
     def __init__(self,window):
         self.window = window
     
+    def accel_shoelace(self,pts):
+        x,y = zip(*pts)
+        return self.graphics_accel.shoelace(x,y)
+
     def apply_changes (self, obj, vertex):
         x, y, z = vertex.x, vertex.y, vertex.z
         # Scaling
