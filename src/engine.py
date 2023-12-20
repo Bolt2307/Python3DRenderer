@@ -4,6 +4,7 @@ import pygame
 import json
 import time
 import graphics
+import helpers
 
 # Function definitions
 def rotate2D(x,y,r):
@@ -116,7 +117,8 @@ class Camera:
     position = Vector3(0,0,0)
     rotation = Vector3(0,0,0) # x = rotation.y, y = rotation.x, z = roll
     velocity = Vector3(0,0,0)
-    drag = 0.99
+    drag = 0.8
+    air_drag = 0.8
     focal_length = 400
 
 class RGBColor:
@@ -284,12 +286,19 @@ class Engine:
 
         pygame.init()
         pygame.font.init()
+
         self.analytics_font = pygame.font.SysFont('cousine', 20)
+
         self.screen.fullwidth, self.screen.full = self.window.get_width(), self.window.get_height() #finds fullscreen dimensions
+
         self.clock = pygame.time.Clock()
+
         pygame.display.set_caption('Python (Pygame) - 3D Renderer')
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
         pygame.mouse.set_visible(False)
+
+        self.cam.drag = 0.8 # Actual camera drag
+        self.cam.air_drag = 0.85 # Actual camera aerial drag
 
         self.objects = self.load_objects(rel_dir("scene_path.json"))
         self.graphics.objects = self.objects
@@ -318,27 +327,43 @@ class Engine:
         return objlist
 
     def update(self):
+        t0 = time.perf_counter_ns()
         self.collision_manager.calculateCollisions()
         cam = self.cam
 
-        pygame.mouse.set_pos(self.window.get_width()/2, self.window.get_height()/2) #mouse "lock"
+        if not self.paused:
+            pygame.mouse.set_pos(self.window.get_width()/2, self.window.get_height()/2) #mouse "lock"
 
         # Update camera
-        cam.position.x,cam.position.y,cam.position.z = cam.velocity.x * cam.drag,cam.velocity.y * cam.drag,cam.velocity.z * cam.drag
+        if (cam.position.y > 0): # In air
+            # Apply drag
+            cam.velocity.x *= cam.air_drag
+            cam.velocity.y *= cam.air_drag
+            cam.velocity.z *= cam.air_drag
 
-        g.bake_lighting()
+            # Gravity
+            cam.velocity.y -= 0.1
+        else: # Touching the ground
+            # Apply drag
+            cam.velocity.x *= cam.drag
+            cam.velocity.y *= cam.drag
+            cam.velocity.z *= cam.drag
 
-        # Gravity
-        if (cam.position.y > 0):
-            if self.can_jump:
-                cam.velocity.y -= 0.1
-        else:
             self.can_jump = True
+
+        cam.position.x += cam.velocity.x
+        cam.position.y += cam.velocity.y
+        cam.position.z += cam.velocity.z
+
+        if cam.position.y < 0:
+            cam.position.y = 0
 
         for obj in self.objects:
             # Add to position by velocity & decrease velocity by the drag factor
             #obj.transform.position.x,obj.transform.position.y,obj.transform.position.z = obj.velocity.x * obj.dragFactor,obj.velocity.y * obj.dragFactor,obj.velocity.z * obj.dragFactor
             pass
+
+        return time.perf_counter_ns() - t0
 
     def handle_control(self):
         t0 = time.perf_counter_ns()
@@ -351,16 +376,18 @@ class Engine:
         if not self.paused: # When unpaused
             cam.rotation.y += rel[0]*0.15
             cam.rotation.x -= rel[1]*0.15 #mouse sense
+
+            cam.rotation.x = helpers.clamp(-90,90,cam.rotation.x)
             
             speed = self.speed
             #movement
             if keys[pygame.K_LSHIFT]: #sprinting
-                if speed < 0.1:
+                if speed < 0.05: # Smoothen acceleration to sprint speed
                     self.speed += 0.01
                 if cam.focal_length > 300:
                     cam.focal_length -= 10
             else:
-                if speed > 0.025:
+                if speed > 0.02: # Smoothen decceleration to walk speed
                     self.speed -= 0.005
                 if cam.focal_length < 400:
                     cam.focal_length += 10
@@ -376,9 +403,9 @@ class Engine:
             if keys[pygame.K_d]:
                 cam.velocity.z += speed*math.cos(math.radians(cam.rotation.y+90))
                 cam.velocity.x += speed*math.sin(math.radians(cam.rotation.y+90))
-            if keys[pygame.K_SPACE]:
-                if cam.position.y <= 0:
-                    cam.velocity.y += 4
+            if keys[pygame.K_SPACE] and self.can_jump:
+                cam.velocity.y += 0.8
+                self.can_jump = False
         else: # In pause menu
             if keys[pygame.K_e]: #exits the game if e is pressed in pause
                 self.active = False
@@ -403,12 +430,6 @@ class Engine:
             self.pause_held = False
 
         return time.perf_counter_ns() - t0
-    
-    log_position = 0
-    def log_text(self,text,font):
-        text_holder = font.render(text,False,(0,0,0))
-        self.screen.blit(text_holder, (5,self.log_position))
-        self.log_position += 20
 
 # Main
 window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -417,9 +438,11 @@ window = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
 g = graphics.Graphics(window)
 engine = Engine(g)
 
-time_elapsed = 0
-last_timestamp = time.perf_counter()
+time_elapsed = 0 # Time since last frame
+last_timestamp = time.perf_counter() # Last timestamp collected
 tick = 0
+
+debug_data = []
 
 while engine.active:
     current_timestamp = time.perf_counter()
@@ -433,16 +456,23 @@ while engine.active:
             pass
         
         # Print elapsed time ever n frames
-        if g.frame % 60 == 0:
+        if g.frame % 20 == 0:
+            debug_data = []
+            debug_data.append(("time_since_last_frame(ms)",time_elapsed * 1000))
+
             # Engine update
-            engine.handle_control()
-            engine.update()
+            debug_data.append(("engine:control(us)",engine.handle_control()/1000))
+            debug_data.append(("engine:update(us)",engine.update()/1000))
             
             # Render objects
-            g.render()
+            debug_data.append(("graphics:render3D(us)",g.render()/1000))
 
             # Render GUI
-            g.gui()
+            debug_data.append(("graphics:render2D(us)",g.gui()/1000))
+            
+            debug_data.append(("graphics:render3D:faces",g.get_rendered_faces()))
+            debug_data.append(("graphics:render3D:objects",g.get_rendered_objects()))
+            debug_data.append(("fps",1/time_elapsed))
         else:
             # Engine update
             engine.handle_control()
@@ -458,4 +488,9 @@ while engine.active:
         pygame.display.flip() # Invert screen
         pygame.display.update() # Display new render
         time_elapsed = 0 # Reset elapsed time
+
+        # Add debug texts to the graphics render buffer
+        if engine.specstog:
+            for pair in debug_data: # (String label, int time_difference)
+                g.debug_log(pair[0] + ": " + str(round(pair[1],2)),engine.analytics_font)
 quit()
